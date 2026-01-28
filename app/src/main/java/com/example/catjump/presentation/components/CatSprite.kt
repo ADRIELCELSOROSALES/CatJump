@@ -26,13 +26,20 @@ fun CatSprite(
     skin: CatSkin = CatSkins.ORANGE
 ) {
     Canvas(modifier = modifier.size(60.dp)) {
+        // Center the cat in the canvas
+        val catWidth = 60f
+        val catHeight = 60f
+        val scale = minOf(size.width / catWidth, size.height / catHeight)
+        val offsetX = (size.width - catWidth * scale) / 2f
+        val offsetY = (size.height - catHeight * scale) / 2f
+
         drawCatWithSkin(
             skin = skin,
             facingRight = facingRight,
             isJumping = isJumping,
-            x = 0f,
-            y = 0f,
-            scale = 1f,
+            x = offsetX,
+            y = offsetY,
+            scale = scale,
             canvasSize = size
         )
     }
@@ -69,8 +76,8 @@ fun DrawScope.drawCatWithSkin(
         BodyScale.FLUFFY -> 1.15f
     }
 
-    val pivotX = if (x == 0f) canvasSize.width / 2 else x + 30f * scale
-    val pivotY = if (y == 0f) canvasSize.height / 2 else y + 30f * scale
+    val pivotX = x + 30f * scale
+    val pivotY = y + 30f * scale
 
     scale(scaleX, 1f, pivot = Offset(pivotX, pivotY)) {
         val baseX = x

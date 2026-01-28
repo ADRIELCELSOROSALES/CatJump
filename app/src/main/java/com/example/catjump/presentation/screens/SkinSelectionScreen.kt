@@ -99,7 +99,7 @@ fun SkinSelectionScreen(
                         color = Color.Black.copy(alpha = 0.5f),
                         shape = RoundedCornerShape(16.dp)
                     )
-                    .padding(16.dp),
+                    .padding(20.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Column(
@@ -108,22 +108,22 @@ fun SkinSelectionScreen(
                     Box(
                         modifier = Modifier
                             .offset(y = -catBounce.dp)
-                            .size(100.dp),
+                            .size(140.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         CatSprite(
                             facingRight = true,
                             isJumping = catBounce > 5f,
-                            modifier = Modifier.size(100.dp),
+                            modifier = Modifier.size(140.dp),
                             skin = selectedSkin
                         )
                     }
                     Text(
                         text = selectedSkin.name,
                         color = Color.White,
-                        fontSize = 20.sp,
+                        fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = 8.dp)
+                        modifier = Modifier.padding(top = 12.dp)
                     )
                 }
             }
@@ -142,10 +142,10 @@ fun SkinSelectionScreen(
                     .padding(8.dp)
             ) {
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(4),
+                    columns = GridCells.Fixed(3),
                     contentPadding = PaddingValues(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(CatSkins.ALL_SKINS) { skin ->
                         SkinGridItem(
@@ -179,7 +179,7 @@ private fun SkinGridItem(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(
                 color = if (isSelected) Color(0xFF4CAF50).copy(alpha = 0.4f)
                 else Color.Black.copy(alpha = 0.3f)
@@ -187,19 +187,19 @@ private fun SkinGridItem(
             .border(
                 width = if (isSelected) 3.dp else 1.dp,
                 color = if (isSelected) Color(0xFF4CAF50) else Color.White.copy(alpha = 0.2f),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(16.dp)
             )
             .clickable(onClick = onClick)
-            .padding(8.dp)
+            .padding(12.dp)
     ) {
         Box(
-            modifier = Modifier.size(50.dp),
+            modifier = Modifier.size(90.dp),
             contentAlignment = Alignment.Center
         ) {
             CatSprite(
                 facingRight = true,
                 isJumping = false,
-                modifier = Modifier.size(50.dp),
+                modifier = Modifier.size(90.dp),
                 skin = skin
             )
         }
@@ -207,11 +207,11 @@ private fun SkinGridItem(
         Text(
             text = skin.name,
             color = if (isSelected) Color.White else Color.White.copy(alpha = 0.7f),
-            fontSize = 9.sp,
+            fontSize = 12.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
             textAlign = TextAlign.Center,
             maxLines = 1,
-            modifier = Modifier.padding(top = 4.dp)
+            modifier = Modifier.padding(top = 6.dp)
         )
     }
 }
