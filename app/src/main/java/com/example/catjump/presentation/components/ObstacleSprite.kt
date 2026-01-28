@@ -22,6 +22,8 @@ fun ObstacleSprite(
             ObstacleType.SPIKE -> drawSpike(size)
             ObstacleType.BIRD -> drawBird(size)
             ObstacleType.BAT -> drawBat(size)
+            ObstacleType.MOUSE -> drawMouse(size)
+            ObstacleType.DOG -> drawDog(size)
         }
     }
 }
@@ -200,5 +202,109 @@ private fun DrawScope.drawBat(size: Size) {
         color = eyeColor,
         radius = size.width * 0.04f,
         center = Offset(size.width * 0.55f, size.height * 0.25f)
+    )
+}
+
+private fun DrawScope.drawMouse(size: Size) {
+    val bodyColor = Color(0xFF9E9E9E)
+    val earColor = Color(0xFFFFCDD2)
+    val noseColor = Color(0xFFFF8A80)
+
+    // Body
+    drawOval(
+        color = bodyColor,
+        topLeft = Offset(size.width * 0.15f, size.height * 0.35f),
+        size = Size(size.width * 0.5f, size.height * 0.4f)
+    )
+
+    // Head
+    drawCircle(
+        color = bodyColor,
+        radius = size.width * 0.18f,
+        center = Offset(size.width * 0.7f, size.height * 0.45f)
+    )
+
+    // Ears
+    drawCircle(color = bodyColor, radius = size.width * 0.1f, center = Offset(size.width * 0.6f, size.height * 0.3f))
+    drawCircle(color = earColor, radius = size.width * 0.06f, center = Offset(size.width * 0.6f, size.height * 0.3f))
+    drawCircle(color = bodyColor, radius = size.width * 0.1f, center = Offset(size.width * 0.78f, size.height * 0.3f))
+    drawCircle(color = earColor, radius = size.width * 0.06f, center = Offset(size.width * 0.78f, size.height * 0.3f))
+
+    // Eyes
+    drawCircle(color = Color.Black, radius = size.width * 0.035f, center = Offset(size.width * 0.65f, size.height * 0.42f))
+    drawCircle(color = Color.Black, radius = size.width * 0.035f, center = Offset(size.width * 0.75f, size.height * 0.42f))
+
+    // Nose
+    drawCircle(color = noseColor, radius = size.width * 0.035f, center = Offset(size.width * 0.85f, size.height * 0.48f))
+
+    // Tail
+    drawPath(
+        path = Path().apply {
+            moveTo(size.width * 0.15f, size.height * 0.5f)
+            quadraticBezierTo(0f, size.height * 0.3f, size.width * 0.05f, size.height * 0.2f)
+        },
+        color = Color(0xFFE0A0A0),
+        style = androidx.compose.ui.graphics.drawscope.Stroke(width = size.width * 0.05f)
+    )
+}
+
+private fun DrawScope.drawDog(size: Size) {
+    val bodyColor = Color(0xFF8B4513)
+    val darkColor = Color(0xFF5D3A1A)
+    val lightColor = Color(0xFFD2A679)
+
+    // Body
+    drawOval(
+        color = bodyColor,
+        topLeft = Offset(size.width * 0.05f, size.height * 0.35f),
+        size = Size(size.width * 0.55f, size.height * 0.4f)
+    )
+
+    // Head
+    drawCircle(
+        color = bodyColor,
+        radius = size.width * 0.2f,
+        center = Offset(size.width * 0.72f, size.height * 0.4f)
+    )
+
+    // Snout
+    drawOval(
+        color = lightColor,
+        topLeft = Offset(size.width * 0.78f, size.height * 0.38f),
+        size = Size(size.width * 0.15f, size.height * 0.15f)
+    )
+
+    // Ears
+    drawPath(
+        path = Path().apply {
+            moveTo(size.width * 0.58f, size.height * 0.32f)
+            quadraticBezierTo(size.width * 0.5f, size.height * 0.2f, size.width * 0.55f, size.height * 0.45f)
+            close()
+        },
+        color = darkColor
+    )
+    drawPath(
+        path = Path().apply {
+            moveTo(size.width * 0.82f, size.height * 0.25f)
+            quadraticBezierTo(size.width * 0.92f, size.height * 0.15f, size.width * 0.95f, size.height * 0.38f)
+            close()
+        },
+        color = darkColor
+    )
+
+    // Eyes
+    drawCircle(color = Color.White, radius = size.width * 0.05f, center = Offset(size.width * 0.66f, size.height * 0.36f))
+    drawCircle(color = Color.White, radius = size.width * 0.05f, center = Offset(size.width * 0.78f, size.height * 0.36f))
+    drawCircle(color = Color.Black, radius = size.width * 0.03f, center = Offset(size.width * 0.67f, size.height * 0.37f))
+    drawCircle(color = Color.Black, radius = size.width * 0.03f, center = Offset(size.width * 0.79f, size.height * 0.37f))
+
+    // Nose
+    drawCircle(color = Color(0xFF2D2D2D), radius = size.width * 0.04f, center = Offset(size.width * 0.9f, size.height * 0.44f))
+
+    // Collar
+    drawRect(
+        color = Color(0xFFE53935),
+        topLeft = Offset(size.width * 0.56f, size.height * 0.48f),
+        size = Size(size.width * 0.18f, size.height * 0.06f)
     )
 }

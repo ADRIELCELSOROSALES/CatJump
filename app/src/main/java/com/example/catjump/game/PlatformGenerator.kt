@@ -104,10 +104,12 @@ class PlatformGenerator(
     ): Obstacle? {
         if (!difficultyManager.shouldSpawnObstacle(level)) return null
 
+        // Flying obstacles only (not MOUSE, that's generated on platforms)
+        val flyingTypes = listOf(ObstacleType.SPIKE, ObstacleType.BIRD, ObstacleType.BAT)
         val type = when {
             level < 4 -> ObstacleType.SPIKE
             level < 6 -> if (Random.nextBoolean()) ObstacleType.SPIKE else ObstacleType.BIRD
-            else -> ObstacleType.entries[Random.nextInt(ObstacleType.entries.size)]
+            else -> flyingTypes[Random.nextInt(flyingTypes.size)]
         }
 
         // Posicionar el obstáculo en un lugar aleatorio pero no bloqueando completamente
@@ -124,6 +126,60 @@ class PlatformGenerator(
             y = y - 60f, // Posicionar un poco más arriba de la plataforma
             type = type,
             velocityX = velocityX
+        )
+    }
+
+    // Genera un ratón encima de una plataforma
+    fun generateMouseOnPlatform(platform: Platform): Obstacle? {
+        // Solo generar en plataformas normales o con resorte
+        if (platform.type == PlatformType.FRAGILE || platform.type == PlatformType.MOVING) {
+            return null
+        }
+
+        // Probabilidad de generar ratón
+        if (Random.nextFloat() > GameConstants.MOUSE_SPAWN_CHANCE) {
+            return null
+        }
+
+        // Posicionar el ratón encima de la plataforma
+        val mouseX = platform.x + (platform.width - GameConstants.MOUSE_SIZE) / 2 +
+                     Random.nextFloat() * (platform.width - GameConstants.MOUSE_SIZE) * 0.5f -
+                     (platform.width - GameConstants.MOUSE_SIZE) * 0.25f
+
+        return Obstacle(
+            x = mouseX.coerceIn(platform.x, platform.x + platform.width - GameConstants.MOUSE_SIZE),
+            y = platform.y - GameConstants.MOUSE_SIZE,
+            width = GameConstants.MOUSE_SIZE,
+            height = GameConstants.MOUSE_SIZE,
+            type = ObstacleType.MOUSE,
+            velocityX = 0f
+        )
+    }
+
+    // Genera un perro encima de una plataforma
+    fun generateDogOnPlatform(platform: Platform): Obstacle? {
+        // Solo generar en plataformas normales (no frágiles, no móviles, no resorte)
+        if (platform.type != PlatformType.NORMAL) {
+            return null
+        }
+
+        // Probabilidad de generar perro
+        if (Random.nextFloat() > GameConstants.DOG_SPAWN_CHANCE) {
+            return null
+        }
+
+        // Posicionar el perro encima de la plataforma
+        val dogX = platform.x + (platform.width - GameConstants.DOG_SIZE) / 2 +
+                   Random.nextFloat() * (platform.width - GameConstants.DOG_SIZE) * 0.4f -
+                   (platform.width - GameConstants.DOG_SIZE) * 0.2f
+
+        return Obstacle(
+            x = dogX.coerceIn(platform.x, platform.x + platform.width - GameConstants.DOG_SIZE),
+            y = platform.y - GameConstants.DOG_SIZE,
+            width = GameConstants.DOG_SIZE,
+            height = GameConstants.DOG_SIZE,
+            type = ObstacleType.DOG,
+            velocityX = 0f
         )
     }
 

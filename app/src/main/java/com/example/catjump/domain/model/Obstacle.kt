@@ -3,9 +3,11 @@ package com.example.catjump.domain.model
 import com.example.catjump.game.GameConstants
 
 enum class ObstacleType {
-    SPIKE,
-    BIRD,
-    BAT
+    CACTUS,  // En plataformas, hace daño
+    BIRD,    // Volador, comestible
+    BAT,     // Volador, comestible
+    MOUSE,   // En plataformas, comestible
+    DOG      // En plataformas, hace daño
 }
 
 data class Obstacle(

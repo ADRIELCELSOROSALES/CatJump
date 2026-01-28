@@ -2,6 +2,7 @@ package com.example.catjump.game
 
 import com.example.catjump.domain.model.Cat
 import com.example.catjump.domain.model.Obstacle
+import com.example.catjump.domain.model.ObstacleType
 import com.example.catjump.domain.model.Platform
 
 class CollisionDetector {
@@ -49,6 +50,25 @@ class CollisionDetector {
     fun findCollidingPlatform(cat: Cat, platforms: List<Platform>): Platform? {
         return platforms.firstOrNull { platform ->
             checkPlatformCollision(cat, platform)
+        }
+    }
+
+    // Encuentra obstáculos que hacen daño (SPIKE y DOG)
+    fun findDamagingObstacle(cat: Cat, obstacles: List<Obstacle>): Obstacle? {
+        if (cat.isInvincible) return null  // No recibe daño si es invencible
+        return obstacles.firstOrNull { obstacle ->
+            (obstacle.type == ObstacleType.SPIKE || obstacle.type == ObstacleType.DOG) &&
+            checkObstacleCollision(cat, obstacle)
+        }
+    }
+
+    // Encuentra aves/murciélagos/ratones que el gato puede comer
+    fun findEdibleObstacle(cat: Cat, obstacles: List<Obstacle>): Obstacle? {
+        return obstacles.firstOrNull { obstacle ->
+            (obstacle.type == ObstacleType.BIRD ||
+             obstacle.type == ObstacleType.BAT ||
+             obstacle.type == ObstacleType.MOUSE) &&
+            checkObstacleCollision(cat, obstacle)
         }
     }
 

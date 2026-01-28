@@ -90,6 +90,7 @@ fun GameScreen(
                     score = gameState.score,
                     highScore = gameState.highScore,
                     level = gameState.level,
+                    lives = gameState.cat.lives,
                     modifier = Modifier.align(Alignment.TopCenter)
                 )
             }

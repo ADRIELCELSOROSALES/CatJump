@@ -52,7 +52,8 @@ fun DrawScope.drawCatWithSkin(
     x: Float,
     y: Float,
     scale: Float,
-    canvasSize: androidx.compose.ui.geometry.Size = size
+    canvasSize: androidx.compose.ui.geometry.Size = size,
+    fatness: Float = 0f  // 0.0 = normal, 1.0 = muy gordo
 ) {
     val catColor = skin.primaryColor
     val darkCatColor = skin.darkColor
@@ -62,19 +63,24 @@ fun DrawScope.drawCatWithSkin(
 
     val scaleX = if (facingRight) 1f else -1f
 
-    // Body scale adjustments
-    val bodyWidthMult = when (skin.bodyScale) {
+    // Body scale adjustments based on skin type
+    val baseBodyWidthMult = when (skin.bodyScale) {
         BodyScale.SLIM -> 0.8f
         BodyScale.NORMAL -> 1f
         BodyScale.CHUBBY -> 1.3f
         BodyScale.FLUFFY -> 1.4f
     }
-    val bodyHeightMult = when (skin.bodyScale) {
+    val baseBodyHeightMult = when (skin.bodyScale) {
         BodyScale.SLIM -> 0.85f
         BodyScale.NORMAL -> 1f
         BodyScale.CHUBBY -> 1.2f
         BodyScale.FLUFFY -> 1.15f
     }
+
+    // Apply dynamic fatness on top of skin body scale
+    // fatness adds up to 50% extra width and 40% extra height
+    val bodyWidthMult = baseBodyWidthMult + (fatness * 0.5f)
+    val bodyHeightMult = baseBodyHeightMult + (fatness * 0.4f)
 
     val pivotX = x + 30f * scale
     val pivotY = y + 30f * scale

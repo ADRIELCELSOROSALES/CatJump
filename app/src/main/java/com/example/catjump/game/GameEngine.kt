@@ -2,6 +2,7 @@ package com.example.catjump.game
 
 import com.example.catjump.domain.model.Cat
 import com.example.catjump.domain.model.GameState
+import com.example.catjump.domain.model.ObstacleType
 import com.example.catjump.domain.model.Platform
 import com.example.catjump.domain.model.PlatformType
 
@@ -138,17 +139,53 @@ class GameEngine(
     }
 
     private fun checkCollisions(state: GameState): GameState {
-        val cat = state.cat
+        var cat = state.cat
+        var obstacles = state.obstacles
 
-        // Check obstacle collision first
-        if (collisionDetector.checkAnyObstacleCollision(cat, state.obstacles)) {
-            return state.copy(isGameOver = true)
+        // Decrease invincibility frames
+        if (cat.invincibilityFrames > 0) {
+            cat = cat.copy(invincibilityFrames = cat.invincibilityFrames - 1)
+        }
+
+        // Check damaging obstacle collision (SPIKE and DOG)
+        val damagingObstacle = collisionDetector.findDamagingObstacle(cat, obstacles)
+        if (damagingObstacle != null) {
+            val newLives = cat.lives - 1
+            if (newLives <= 0) {
+                return state.copy(isGameOver = true)
+            }
+            // Lose a life and become invincible temporarily
+            cat = cat.copy(
+                lives = newLives,
+                invincibilityFrames = GameConstants.INVINCIBILITY_FRAMES
+            )
+            // Remove the dog if it was a dog (spikes stay)
+            if (damagingObstacle.type == ObstacleType.DOG) {
+                obstacles = obstacles.filter { it != damagingObstacle }
+            }
+        }
+
+        // Check if cat eats a bird, bat or mouse
+        val edibleObstacle = collisionDetector.findEdibleObstacle(cat, obstacles)
+        if (edibleObstacle != null) {
+            // Cat eats and gets fatter (up to 10 creatures max for visual growth)
+            val newBirdsEaten = cat.birdsEaten + 1
+            val newFatness = if (cat.fatness < GameConstants.MAX_FATNESS) {
+                (cat.fatness + GameConstants.FATNESS_GAIN_PER_BIRD)
+                    .coerceAtMost(GameConstants.MAX_FATNESS)
+            } else {
+                cat.fatness // Already at max, can still eat but won't grow more
+            }
+            cat = cat.copy(fatness = newFatness, birdsEaten = newBirdsEaten)
+            // Remove the eaten obstacle
+            obstacles = obstacles.filter { it != edibleObstacle }
         }
 
         // Check platform collision (only when falling)
         val collidingPlatform = collisionDetector.findCollidingPlatform(cat, state.platforms)
 
         if (collidingPlatform != null) {
+            // Jump velocity (no reduction from fatness)
             val jumpVelocity = when (collidingPlatform.type) {
                 PlatformType.SPRING -> GameConstants.SPRING_JUMP_VELOCITY
                 else -> GameConstants.JUMP_VELOCITY
@@ -172,11 +209,12 @@ class GameEngine(
                     velocityY = jumpVelocity,
                     isJumping = true
                 ),
-                platforms = updatedPlatforms
+                platforms = updatedPlatforms,
+                obstacles = obstacles
             )
         }
 
-        return state
+        return state.copy(cat = cat, obstacles = obstacles)
     }
 
     private fun updateCameraAndScore(state: GameState): GameState {
@@ -217,15 +255,27 @@ class GameEngine(
                 lastPlatformX = highestPlatform?.x ?: (state.screenWidth / 2)
             )
 
+            // Generate flying obstacle (bird, bat, spike)
             val newObstacle = platformGenerator.generateObstacle(
                 screenWidth = state.screenWidth,
                 y = newPlatform.y,
                 level = state.level
             )
 
+            // Generate mouse on the platform
+            val mouseOnPlatform = platformGenerator.generateMouseOnPlatform(newPlatform)
+
+            // Generate dog on the platform (only if no mouse)
+            val dogOnPlatform = if (mouseOnPlatform == null) {
+                platformGenerator.generateDogOnPlatform(newPlatform)
+            } else null
+
+            // Collect all new obstacles
+            val newObstacles = listOfNotNull(newObstacle, mouseOnPlatform, dogOnPlatform)
+
             return state.copy(
                 platforms = state.platforms + newPlatform,
-                obstacles = if (newObstacle != null) state.obstacles + newObstacle else state.obstacles
+                obstacles = state.obstacles + newObstacles
             )
         }
 

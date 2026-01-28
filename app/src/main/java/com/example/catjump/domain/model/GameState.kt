@@ -28,7 +28,11 @@ data class GameState(
                 cat = Cat(
                     x = catStartX,
                     y = catStartY,
-                    velocityY = GameConstants.JUMP_VELOCITY // Salto inicial
+                    width = GameConstants.CAT_SIZE,
+                    height = GameConstants.CAT_SIZE,
+                    velocityY = GameConstants.JUMP_VELOCITY, // Salto inicial
+                    fatness = 0f, // Empieza delgado
+                    lives = GameConstants.INITIAL_LIVES
                 ),
                 platforms = emptyList(),
                 screenWidth = screenWidth,
