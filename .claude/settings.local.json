@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(.gradlew.bat assembleDebug)",
+      "Bash(cmd /c \"cd /d D:\\\\programacion\\\\game android && gradlew.bat assembleDebug\")",
+      "Bash(\"D:\\\\programacion\\\\game android\\\\gradlew.bat\" assembleDebug --stacktrace)"
+    ]
+  }
+}

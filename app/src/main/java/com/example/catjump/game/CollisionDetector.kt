@@ -1,0 +1,60 @@
+package com.example.catjump.game
+
+import com.example.catjump.domain.model.Cat
+import com.example.catjump.domain.model.Obstacle
+import com.example.catjump.domain.model.Platform
+
+class CollisionDetector {
+
+    fun checkPlatformCollision(cat: Cat, platform: Platform): Boolean {
+        if (!platform.isActive) return false
+
+        // Solo detectar colisión cuando el gato está cayendo
+        if (cat.velocityY <= 0) return false
+
+        // Verificar que los pies del gato están sobre la plataforma
+        val catFeetY = cat.bottom
+        val platformTop = platform.y
+
+        // El gato debe estar cayendo hacia la plataforma
+        val verticalOverlap = catFeetY >= platformTop &&
+                              catFeetY <= platformTop + platform.height + cat.velocityY
+
+        // Verificar overlap horizontal (con un poco de tolerancia)
+        val horizontalOverlap = cat.right > platform.x + 5f && cat.x < platform.right - 5f
+
+        return verticalOverlap && horizontalOverlap
+    }
+
+    fun checkObstacleCollision(cat: Cat, obstacle: Obstacle): Boolean {
+        // Colisión por bounding box con margen pequeño para ser más preciso
+        val margin = 8f
+
+        val catLeft = cat.x + margin
+        val catRight = cat.right - margin
+        val catTop = cat.y + margin
+        val catBottom = cat.bottom - margin
+
+        val obsLeft = obstacle.x + 5f
+        val obsRight = obstacle.right - 5f
+        val obsTop = obstacle.y + 5f
+        val obsBottom = obstacle.bottom - 5f
+
+        return catRight > obsLeft &&
+               catLeft < obsRight &&
+               catBottom > obsTop &&
+               catTop < obsBottom
+    }
+
+    fun findCollidingPlatform(cat: Cat, platforms: List<Platform>): Platform? {
+        return platforms.firstOrNull { platform ->
+            checkPlatformCollision(cat, platform)
+        }
+    }
+
+    fun checkAnyObstacleCollision(cat: Cat, obstacles: List<Obstacle>): Boolean {
+        return obstacles.any { obstacle ->
+            checkObstacleCollision(cat, obstacle)
+        }
+    }
+}
