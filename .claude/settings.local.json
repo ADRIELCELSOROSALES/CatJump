@@ -10,7 +10,8 @@
       "Bash(git remote set-url:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(./gradlew assembleDebug:*)"
+      "Bash(./gradlew assembleDebug:*)",
+      "Bash(dir:*)"
     ]
   }
 }

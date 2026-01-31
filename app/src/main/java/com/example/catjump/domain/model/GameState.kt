@@ -15,7 +15,9 @@ data class GameState(
     val cameraY: Float = 0f,
     val screenWidth: Float = 0f,
     val screenHeight: Float = 0f,
-    val currentTime: Long = System.currentTimeMillis()
+    val currentTime: Long = System.currentTimeMillis(),
+    val soundEvents: List<SoundEvent> = emptyList(),
+    val activeDogCount: Int = 0
 ) {
     companion object {
         fun initial(screenWidth: Float, screenHeight: Float): GameState {

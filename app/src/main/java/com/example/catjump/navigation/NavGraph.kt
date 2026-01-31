@@ -1,14 +1,19 @@
 package com.example.catjump.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.catjump.audio.SoundManager
 import com.example.catjump.domain.model.CatSkin
+import com.example.catjump.domain.model.SoundEvent
 import com.example.catjump.presentation.screens.GameOverScreen
 import com.example.catjump.presentation.screens.GameScreen
 import com.example.catjump.presentation.screens.MenuScreen
@@ -29,6 +34,16 @@ fun CatJumpNavGraph(
     viewModel: GameViewModel,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val soundManager = remember { SoundManager(context) }
+
+    // Cleanup when composable is disposed
+    DisposableEffect(Unit) {
+        onDispose {
+            soundManager.release()
+        }
+    }
+
     val uiState by viewModel.uiState.collectAsState()
     val highScore by viewModel.highScore.collectAsState()
     val selectedSkin by viewModel.selectedSkin.collectAsState()
@@ -39,6 +54,11 @@ fun CatJumpNavGraph(
         modifier = modifier
     ) {
         composable(Screen.Menu.route) {
+            // Ensure music is stopped when in menu
+            LaunchedEffect(Unit) {
+                soundManager.stopBackgroundMusic()
+            }
+
             MenuScreen(
                 highScore = highScore,
                 selectedSkin = selectedSkin,
@@ -66,11 +86,29 @@ fun CatJumpNavGraph(
         composable(Screen.Game.route) {
             val state = uiState
 
+            // Start background music when entering game screen
+            LaunchedEffect(Unit) {
+                soundManager.startBackgroundMusic()
+            }
+
             // Handle navigation to GameOver
             LaunchedEffect(state) {
                 if (state is GameUiState.GameOver) {
                     navController.navigate(Screen.GameOver.route) {
                         popUpTo(Screen.Game.route) { inclusive = true }
+                    }
+                }
+            }
+
+            // Handle sound events
+            LaunchedEffect(state) {
+                if (state is GameUiState.Playing) {
+                    state.gameState.soundEvents.forEach { event ->
+                        when (event) {
+                            SoundEvent.JUMP -> soundManager.playJumpSound()
+                            SoundEvent.LOSE_LIFE -> soundManager.playLoseLifeSound()
+                            SoundEvent.DOG_APPEARED -> soundManager.playDogAppearedSound()
+                        }
                     }
                 }
             }
@@ -102,6 +140,12 @@ fun CatJumpNavGraph(
 
         composable(Screen.GameOver.route) {
             val gameOverState = uiState as? GameUiState.GameOver
+
+            // Stop music and play game over sound
+            LaunchedEffect(Unit) {
+                soundManager.stopBackgroundMusic()
+                soundManager.playGameOverSound()
+            }
 
             GameOverScreen(
                 score = gameOverState?.score ?: 0,

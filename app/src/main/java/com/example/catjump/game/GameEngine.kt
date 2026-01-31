@@ -6,6 +6,7 @@ import com.example.catjump.domain.model.ObstacleType
 import com.example.catjump.domain.model.Platform
 import com.example.catjump.domain.model.PlatformType
 import com.example.catjump.domain.model.PowerUpType
+import com.example.catjump.domain.model.SoundEvent
 
 class GameEngine(
     private val platformGenerator: PlatformGenerator,
@@ -32,7 +33,8 @@ class GameEngine(
     fun update(state: GameState): GameState {
         if (state.isGameOver) return state
 
-        var newState = state.copy(currentTime = System.currentTimeMillis())
+        // Clear sound events from previous frame
+        var newState = state.copy(currentTime = System.currentTimeMillis(), soundEvents = emptyList())
 
         // Update power-up timers
         newState = updatePowerUpTimers(newState)
@@ -183,6 +185,7 @@ class GameEngine(
         var obstacles = state.obstacles
         var powerUps = state.powerUps
         val currentTime = state.currentTime
+        val soundEvents = state.soundEvents.toMutableList()
 
         // Decrease invincibility frames
         if (cat.invincibilityFrames > 0) {
@@ -221,6 +224,8 @@ class GameEngine(
                 lives = newLives,
                 invincibilityFrames = GameConstants.INVINCIBILITY_FRAMES
             )
+            // Add lose life sound event
+            soundEvents.add(SoundEvent.LOSE_LIFE)
             // Los perros y cactus NO desaparecen al hacer daño
         }
 
@@ -275,6 +280,9 @@ class GameEngine(
                     state.platforms
                 }
 
+                // Add jump sound event
+                soundEvents.add(SoundEvent.JUMP)
+
                 return state.copy(
                     cat = cat.copy(
                         y = collidingPlatform.y - cat.height,
@@ -283,12 +291,13 @@ class GameEngine(
                     ),
                     platforms = updatedPlatforms,
                     obstacles = obstacles,
-                    powerUps = powerUps
+                    powerUps = powerUps,
+                    soundEvents = soundEvents
                 )
             }
         }
 
-        return state.copy(cat = cat, obstacles = obstacles, powerUps = powerUps)
+        return state.copy(cat = cat, obstacles = obstacles, powerUps = powerUps, soundEvents = soundEvents)
     }
 
     private fun updateCameraAndScore(state: GameState): GameState {
@@ -368,10 +377,23 @@ class GameEngine(
             val newObstacles = listOfNotNull(newObstacle, mouseOnPlatform, dogOnPlatform, cactusOnPlatform)
             val newPowerUps = listOfNotNull(powerUpOnPlatform)
 
+            // Add dog appeared sound event if a new dog was generated
+            val soundEvents = if (dogOnPlatform != null) {
+                state.soundEvents + SoundEvent.DOG_APPEARED
+            } else {
+                state.soundEvents
+            }
+
+            // Count active dogs
+            val allObstacles = state.obstacles + newObstacles
+            val activeDogCount = allObstacles.count { it.type == ObstacleType.DOG }
+
             return state.copy(
                 platforms = state.platforms + newPlatform,
-                obstacles = state.obstacles + newObstacles,
-                powerUps = state.powerUps + newPowerUps
+                obstacles = allObstacles,
+                powerUps = state.powerUps + newPowerUps,
+                soundEvents = soundEvents,
+                activeDogCount = activeDogCount
             )
         }
 
@@ -379,22 +401,26 @@ class GameEngine(
     }
 
     private fun cleanupOffScreen(state: GameState): GameState {
+        val cleanedObstacles = platformGenerator.cleanupObstacles(
+            state.obstacles,
+            state.cameraY,
+            state.screenHeight
+        )
+        val activeDogCount = cleanedObstacles.count { it.type == ObstacleType.DOG }
+
         return state.copy(
             platforms = platformGenerator.cleanupPlatforms(
                 state.platforms,
                 state.cameraY,
                 state.screenHeight
             ),
-            obstacles = platformGenerator.cleanupObstacles(
-                state.obstacles,
-                state.cameraY,
-                state.screenHeight
-            ),
+            obstacles = cleanedObstacles,
             powerUps = platformGenerator.cleanupPowerUps(
                 state.powerUps,
                 state.cameraY,
                 state.screenHeight
-            )
+            ),
+            activeDogCount = activeDogCount
         )
     }
 
