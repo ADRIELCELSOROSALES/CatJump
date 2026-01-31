@@ -202,13 +202,19 @@ class PlatformGenerator(
         // El perro camina de lado a lado en la plataforma
         val walkSpeed = GameConstants.DOG_WALK_SPEED * (if (Random.nextBoolean()) 1 else -1)
 
+        // Límites de la plataforma para que el perro no se caiga
+        val minX = platform.x
+        val maxX = platform.x + platform.width - GameConstants.DOG_SIZE
+
         return Obstacle(
             x = dogX,
             y = platform.y - GameConstants.DOG_SIZE,
             width = GameConstants.DOG_SIZE,
             height = GameConstants.DOG_SIZE,
             type = ObstacleType.DOG,
-            velocityX = walkSpeed
+            velocityX = walkSpeed,
+            platformMinX = minX,
+            platformMaxX = maxX
         )
     }
 

@@ -79,8 +79,11 @@ fun GameScreen(
                         )
                     }
             ) {
-                // Background with parallax
-                GameBackground(cameraY = gameState.cameraY)
+                // Background with parallax - changes based on height
+                GameBackground(
+                    cameraY = gameState.cameraY,
+                    score = gameState.score
+                )
 
                 // Game elements (platforms, obstacles, cat)
                 GameCanvas(gameState = gameState, catSkin = catSkin)

@@ -17,7 +17,10 @@ data class Obstacle(
     val height: Float = GameConstants.OBSTACLE_SIZE,
     val type: ObstacleType = ObstacleType.BIRD,
     val velocityX: Float = 0f,
-    val velocityY: Float = 0f
+    val velocityY: Float = 0f,
+    // Límites de la plataforma donde camina (solo para perros)
+    val platformMinX: Float = 0f,
+    val platformMaxX: Float = Float.MAX_VALUE
 ) {
     val centerX: Float get() = x + width / 2
     val centerY: Float get() = y + height / 2

@@ -157,10 +157,19 @@ class GameEngine(
             var newX = obstacle.x + obstacle.velocityX
             var newVelocityX = obstacle.velocityX
 
-            // Bounce or wrap
-            if (newX <= 0 || newX >= state.screenWidth - obstacle.width) {
-                newVelocityX = -newVelocityX
-                newX = newX.coerceIn(0f, state.screenWidth - obstacle.width)
+            // Los perros caminan dentro de su plataforma
+            if (obstacle.type == ObstacleType.DOG) {
+                // Rebotar en los límites de la plataforma
+                if (newX <= obstacle.platformMinX || newX >= obstacle.platformMaxX) {
+                    newVelocityX = -newVelocityX
+                    newX = newX.coerceIn(obstacle.platformMinX, obstacle.platformMaxX)
+                }
+            } else {
+                // Otros obstáculos rebotan en los bordes de la pantalla
+                if (newX <= 0 || newX >= state.screenWidth - obstacle.width) {
+                    newVelocityX = -newVelocityX
+                    newX = newX.coerceIn(0f, state.screenWidth - obstacle.width)
+                }
             }
 
             obstacle.copy(x = newX, velocityX = newVelocityX)
@@ -226,7 +235,15 @@ class GameEngine(
             } else {
                 cat.fatness // Already at max, can still eat but won't grow more
             }
-            cat = cat.copy(fatness = newFatness, birdsEaten = newBirdsEaten)
+
+            // Cada 5 animalitos comidos, gana una vida (máximo 3 vidas)
+            val newLives = if (newBirdsEaten % 5 == 0 && cat.lives < GameConstants.INITIAL_LIVES) {
+                cat.lives + 1
+            } else {
+                cat.lives
+            }
+
+            cat = cat.copy(fatness = newFatness, birdsEaten = newBirdsEaten, lives = newLives)
             // Remove the eaten obstacle
             obstacles = obstacles.filter { it != edibleObstacle }
         }
