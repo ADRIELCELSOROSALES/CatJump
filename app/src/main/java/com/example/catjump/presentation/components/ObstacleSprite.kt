@@ -19,7 +19,7 @@ fun ObstacleSprite(
 ) {
     Canvas(modifier = modifier.size(40.dp)) {
         when (type) {
-            ObstacleType.SPIKE -> drawSpike(size)
+            ObstacleType.CACTUS -> drawCactus(size)
             ObstacleType.BIRD -> drawBird(size)
             ObstacleType.BAT -> drawBat(size)
             ObstacleType.MOUSE -> drawMouse(size)
@@ -28,37 +28,70 @@ fun ObstacleSprite(
     }
 }
 
-private fun DrawScope.drawSpike(size: Size) {
-    val spikeColor = Color(0xFF455A64)
-    val spikeLightColor = Color(0xFF78909C)
+private fun DrawScope.drawCactus(size: Size) {
+    val cactusColor = Color(0xFF2E7D32)  // Verde oscuro
+    val cactusLightColor = Color(0xFF4CAF50)  // Verde claro
+    val spineColor = Color(0xFFFFEB3B)  // Espinas amarillas
 
-    val spikeCount = 3
-    val spikeWidth = size.width / spikeCount
+    // Tronco principal
+    drawRoundRect(
+        color = cactusColor,
+        topLeft = Offset(size.width * 0.35f, size.height * 0.2f),
+        size = Size(size.width * 0.3f, size.height * 0.8f),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.width * 0.1f)
+    )
 
-    for (i in 0 until spikeCount) {
-        val left = i * spikeWidth
-        val center = left + spikeWidth / 2
+    // Highlight del tronco
+    drawRoundRect(
+        color = cactusLightColor,
+        topLeft = Offset(size.width * 0.4f, size.height * 0.25f),
+        size = Size(size.width * 0.08f, size.height * 0.7f),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.width * 0.04f)
+    )
 
-        // Spike triangle
-        drawPath(
-            path = Path().apply {
-                moveTo(left, size.height)
-                lineTo(center, 0f)
-                lineTo(left + spikeWidth, size.height)
-                close()
-            },
-            color = spikeColor
-        )
+    // Brazo izquierdo
+    drawRoundRect(
+        color = cactusColor,
+        topLeft = Offset(size.width * 0.1f, size.height * 0.35f),
+        size = Size(size.width * 0.25f, size.height * 0.15f),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.width * 0.08f)
+    )
+    drawRoundRect(
+        color = cactusColor,
+        topLeft = Offset(size.width * 0.1f, size.height * 0.2f),
+        size = Size(size.width * 0.12f, size.height * 0.25f),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.width * 0.06f)
+    )
 
-        // Highlight
-        drawPath(
-            path = Path().apply {
-                moveTo(left + spikeWidth * 0.3f, size.height)
-                lineTo(center, 0f)
-                lineTo(center, size.height * 0.3f)
-                close()
-            },
-            color = spikeLightColor
+    // Brazo derecho
+    drawRoundRect(
+        color = cactusColor,
+        topLeft = Offset(size.width * 0.65f, size.height * 0.45f),
+        size = Size(size.width * 0.25f, size.height * 0.15f),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.width * 0.08f)
+    )
+    drawRoundRect(
+        color = cactusColor,
+        topLeft = Offset(size.width * 0.78f, size.height * 0.3f),
+        size = Size(size.width * 0.12f, size.height * 0.25f),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.width * 0.06f)
+    )
+
+    // Espinas (pequeñas líneas)
+    val spinePositions = listOf(
+        Offset(size.width * 0.5f, size.height * 0.25f),
+        Offset(size.width * 0.45f, size.height * 0.4f),
+        Offset(size.width * 0.55f, size.height * 0.55f),
+        Offset(size.width * 0.48f, size.height * 0.7f),
+        Offset(size.width * 0.15f, size.height * 0.25f),
+        Offset(size.width * 0.85f, size.height * 0.38f)
+    )
+
+    spinePositions.forEach { pos ->
+        drawCircle(
+            color = spineColor,
+            radius = size.width * 0.02f,
+            center = pos
         )
     }
 }

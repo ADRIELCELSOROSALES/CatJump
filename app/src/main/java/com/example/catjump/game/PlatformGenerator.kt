@@ -4,6 +4,8 @@ import com.example.catjump.domain.model.Obstacle
 import com.example.catjump.domain.model.ObstacleType
 import com.example.catjump.domain.model.Platform
 import com.example.catjump.domain.model.PlatformType
+import com.example.catjump.domain.model.PowerUp
+import com.example.catjump.domain.model.PowerUpType
 import kotlin.math.abs
 import kotlin.random.Random
 
@@ -104,11 +106,10 @@ class PlatformGenerator(
     ): Obstacle? {
         if (!difficultyManager.shouldSpawnObstacle(level)) return null
 
-        // Flying obstacles only (not MOUSE, that's generated on platforms)
-        val flyingTypes = listOf(ObstacleType.SPIKE, ObstacleType.BIRD, ObstacleType.BAT)
+        // Flying obstacles only (BIRD and BAT - CACTUS goes on platforms)
+        val flyingTypes = listOf(ObstacleType.BIRD, ObstacleType.BAT)
         val type = when {
-            level < 4 -> ObstacleType.SPIKE
-            level < 6 -> if (Random.nextBoolean()) ObstacleType.SPIKE else ObstacleType.BIRD
+            level < 4 -> ObstacleType.BIRD
             else -> flyingTypes[Random.nextInt(flyingTypes.size)]
         }
 
@@ -156,7 +157,34 @@ class PlatformGenerator(
         )
     }
 
-    // Genera un perro encima de una plataforma
+    // Genera un cactus encima de una plataforma
+    fun generateCactusOnPlatform(platform: Platform): Obstacle? {
+        // Solo generar en plataformas normales
+        if (platform.type != PlatformType.NORMAL) {
+            return null
+        }
+
+        // Probabilidad de generar cactus
+        if (Random.nextFloat() > GameConstants.CACTUS_SPAWN_CHANCE) {
+            return null
+        }
+
+        // Posicionar el cactus encima de la plataforma
+        val cactusX = platform.x + (platform.width - GameConstants.CACTUS_SIZE) / 2 +
+                      Random.nextFloat() * (platform.width - GameConstants.CACTUS_SIZE) * 0.4f -
+                      (platform.width - GameConstants.CACTUS_SIZE) * 0.2f
+
+        return Obstacle(
+            x = cactusX.coerceIn(platform.x, platform.x + platform.width - GameConstants.CACTUS_SIZE),
+            y = platform.y - GameConstants.CACTUS_SIZE,
+            width = GameConstants.CACTUS_SIZE,
+            height = GameConstants.CACTUS_SIZE,
+            type = ObstacleType.CACTUS,
+            velocityX = 0f
+        )
+    }
+
+    // Genera un perro encima de una plataforma (camina de lado a lado)
     fun generateDogOnPlatform(platform: Platform): Obstacle? {
         // Solo generar en plataformas normales (no frágiles, no móviles, no resorte)
         if (platform.type != PlatformType.NORMAL) {
@@ -168,18 +196,45 @@ class PlatformGenerator(
             return null
         }
 
-        // Posicionar el perro encima de la plataforma
-        val dogX = platform.x + (platform.width - GameConstants.DOG_SIZE) / 2 +
-                   Random.nextFloat() * (platform.width - GameConstants.DOG_SIZE) * 0.4f -
-                   (platform.width - GameConstants.DOG_SIZE) * 0.2f
+        // Posicionar el perro en el centro de la plataforma
+        val dogX = platform.x + (platform.width - GameConstants.DOG_SIZE) / 2
+
+        // El perro camina de lado a lado en la plataforma
+        val walkSpeed = GameConstants.DOG_WALK_SPEED * (if (Random.nextBoolean()) 1 else -1)
 
         return Obstacle(
-            x = dogX.coerceIn(platform.x, platform.x + platform.width - GameConstants.DOG_SIZE),
+            x = dogX,
             y = platform.y - GameConstants.DOG_SIZE,
             width = GameConstants.DOG_SIZE,
             height = GameConstants.DOG_SIZE,
             type = ObstacleType.DOG,
-            velocityX = 0f
+            velocityX = walkSpeed
+        )
+    }
+
+    // Genera un power-up flotando encima de una plataforma
+    fun generatePowerUpOnPlatform(platform: Platform): PowerUp? {
+        // Solo generar en plataformas normales o con resorte
+        if (platform.type == PlatformType.FRAGILE || platform.type == PlatformType.MOVING) {
+            return null
+        }
+
+        // Probabilidad de generar power-up
+        if (Random.nextFloat() > GameConstants.POWERUP_SPAWN_CHANCE) {
+            return null
+        }
+
+        // Posicionar el power-up encima de la plataforma (flotando más alto)
+        val powerUpX = platform.x + (platform.width - GameConstants.POWERUP_SIZE) / 2
+        val powerUpY = platform.y - GameConstants.POWERUP_SIZE - 40f  // Flotando arriba
+
+        // Tipo aleatorio de power-up
+        val type = if (Random.nextBoolean()) PowerUpType.JETPACK else PowerUpType.KIBBLE
+
+        return PowerUp(
+            x = powerUpX,
+            y = powerUpY,
+            type = type
         )
     }
 
@@ -200,6 +255,16 @@ class PlatformGenerator(
     ): List<Obstacle> {
         return obstacles.filter { obstacle ->
             obstacle.y < cameraY + screenHeight + 100f
+        }
+    }
+
+    fun cleanupPowerUps(
+        powerUps: List<PowerUp>,
+        cameraY: Float,
+        screenHeight: Float
+    ): List<PowerUp> {
+        return powerUps.filter { powerUp ->
+            powerUp.y < cameraY + screenHeight + 100f
         }
     }
 }

@@ -5,6 +5,7 @@ import com.example.catjump.domain.model.GameState
 import com.example.catjump.domain.model.ObstacleType
 import com.example.catjump.domain.model.Platform
 import com.example.catjump.domain.model.PlatformType
+import com.example.catjump.domain.model.PowerUpType
 
 class GameEngine(
     private val platformGenerator: PlatformGenerator,
@@ -12,6 +13,7 @@ class GameEngine(
     private val difficultyManager: DifficultyManager
 ) {
     private var moveDirection: Int = 0 // -1 left, 0 none, 1 right
+    private var platformsSinceLastDamagingObstacle: Int = 0  // Contador para espaciar obstáculos
 
     fun setMoveDirection(direction: Int) {
         moveDirection = direction.coerceIn(-1, 1)
@@ -30,7 +32,10 @@ class GameEngine(
     fun update(state: GameState): GameState {
         if (state.isGameOver) return state
 
-        var newState = state
+        var newState = state.copy(currentTime = System.currentTimeMillis())
+
+        // Update power-up timers
+        newState = updatePowerUpTimers(newState)
 
         // Update cat physics
         newState = updateCatPhysics(newState)
@@ -38,7 +43,7 @@ class GameEngine(
         // Update platforms (moving ones)
         newState = updatePlatforms(newState)
 
-        // Update obstacles
+        // Update obstacles (including dog walking)
         newState = updateObstacles(newState)
 
         // Check collisions
@@ -59,12 +64,38 @@ class GameEngine(
         return newState
     }
 
+    private fun updatePowerUpTimers(state: GameState): GameState {
+        val cat = state.cat
+        val currentTime = state.currentTime
+
+        var updatedCat = cat
+
+        // Check jetpack expiration
+        if (cat.jetpackActive && currentTime >= cat.jetpackEndTime) {
+            updatedCat = updatedCat.copy(jetpackActive = false)
+        }
+
+        // Check super jump expiration
+        if (cat.superJumpActive && (currentTime >= cat.superJumpEndTime || cat.superJumpsRemaining <= 0)) {
+            updatedCat = updatedCat.copy(superJumpActive = false, superJumpsRemaining = 0)
+        }
+
+        return state.copy(cat = updatedCat)
+    }
+
     private fun updateCatPhysics(state: GameState): GameState {
         val cat = state.cat
 
-        // Apply gravity
-        var newVelocityY = cat.velocityY + GameConstants.GRAVITY
-        newVelocityY = newVelocityY.coerceAtMost(GameConstants.MAX_FALL_VELOCITY)
+        var newVelocityY: Float
+
+        // Si el jetpack está activo, sube constantemente
+        if (cat.jetpackActive) {
+            newVelocityY = GameConstants.JETPACK_BOOST
+        } else {
+            // Apply gravity
+            newVelocityY = cat.velocityY + GameConstants.GRAVITY
+            newVelocityY = newVelocityY.coerceAtMost(GameConstants.MAX_FALL_VELOCITY)
+        }
 
         // Apply horizontal movement
         val newVelocityX = moveDirection * GameConstants.HORIZONTAL_SPEED
@@ -141,13 +172,35 @@ class GameEngine(
     private fun checkCollisions(state: GameState): GameState {
         var cat = state.cat
         var obstacles = state.obstacles
+        var powerUps = state.powerUps
+        val currentTime = state.currentTime
 
         // Decrease invincibility frames
         if (cat.invincibilityFrames > 0) {
             cat = cat.copy(invincibilityFrames = cat.invincibilityFrames - 1)
         }
 
-        // Check damaging obstacle collision (SPIKE and DOG)
+        // Check power-up collision
+        val collidingPowerUp = collisionDetector.findCollidingPowerUp(cat, powerUps)
+        if (collidingPowerUp != null) {
+            // Apply power-up effect
+            cat = when (collidingPowerUp.type) {
+                PowerUpType.JETPACK -> cat.copy(
+                    jetpackActive = true,
+                    jetpackEndTime = currentTime + GameConstants.JETPACK_DURATION,
+                    velocityY = GameConstants.JETPACK_BOOST
+                )
+                PowerUpType.KIBBLE -> cat.copy(
+                    superJumpActive = true,
+                    superJumpEndTime = currentTime + GameConstants.SUPER_JUMP_DURATION,
+                    superJumpsRemaining = GameConstants.SUPER_JUMP_COUNT
+                )
+            }
+            // Remove the collected power-up
+            powerUps = powerUps.filter { it != collidingPowerUp }
+        }
+
+        // Check damaging obstacle collision (CACTUS and DOG)
         val damagingObstacle = collisionDetector.findDamagingObstacle(cat, obstacles)
         if (damagingObstacle != null) {
             val newLives = cat.lives - 1
@@ -159,10 +212,7 @@ class GameEngine(
                 lives = newLives,
                 invincibilityFrames = GameConstants.INVINCIBILITY_FRAMES
             )
-            // Remove the dog if it was a dog (spikes stay)
-            if (damagingObstacle.type == ObstacleType.DOG) {
-                obstacles = obstacles.filter { it != damagingObstacle }
-            }
+            // Los perros y cactus NO desaparecen al hacer daño
         }
 
         // Check if cat eats a bird, bat or mouse
@@ -181,40 +231,47 @@ class GameEngine(
             obstacles = obstacles.filter { it != edibleObstacle }
         }
 
-        // Check platform collision (only when falling)
-        val collidingPlatform = collisionDetector.findCollidingPlatform(cat, state.platforms)
+        // Check platform collision (only when falling and not using jetpack)
+        if (!cat.jetpackActive) {
+            val collidingPlatform = collisionDetector.findCollidingPlatform(cat, state.platforms)
 
-        if (collidingPlatform != null) {
-            // Jump velocity (no reduction from fatness)
-            val jumpVelocity = when (collidingPlatform.type) {
-                PlatformType.SPRING -> GameConstants.SPRING_JUMP_VELOCITY
-                else -> GameConstants.JUMP_VELOCITY
-            }
-
-            val updatedPlatforms = if (collidingPlatform.type == PlatformType.FRAGILE) {
-                state.platforms.map { platform ->
-                    if (platform == collidingPlatform) {
-                        platform.copy(isActive = false)
-                    } else {
-                        platform
+            if (collidingPlatform != null) {
+                // Jump velocity - use super jump if active
+                val jumpVelocity = when {
+                    cat.superJumpActive && cat.superJumpsRemaining > 0 -> {
+                        cat = cat.copy(superJumpsRemaining = cat.superJumpsRemaining - 1)
+                        GameConstants.SUPER_JUMP_VELOCITY
                     }
+                    collidingPlatform.type == PlatformType.SPRING -> GameConstants.SPRING_JUMP_VELOCITY
+                    else -> GameConstants.JUMP_VELOCITY
                 }
-            } else {
-                state.platforms
-            }
 
-            return state.copy(
-                cat = cat.copy(
-                    y = collidingPlatform.y - cat.height,
-                    velocityY = jumpVelocity,
-                    isJumping = true
-                ),
-                platforms = updatedPlatforms,
-                obstacles = obstacles
-            )
+                val updatedPlatforms = if (collidingPlatform.type == PlatformType.FRAGILE) {
+                    state.platforms.map { platform ->
+                        if (platform == collidingPlatform) {
+                            platform.copy(isActive = false)
+                        } else {
+                            platform
+                        }
+                    }
+                } else {
+                    state.platforms
+                }
+
+                return state.copy(
+                    cat = cat.copy(
+                        y = collidingPlatform.y - cat.height,
+                        velocityY = jumpVelocity,
+                        isJumping = true
+                    ),
+                    platforms = updatedPlatforms,
+                    obstacles = obstacles,
+                    powerUps = powerUps
+                )
+            }
         }
 
-        return state.copy(cat = cat, obstacles = obstacles)
+        return state.copy(cat = cat, obstacles = obstacles, powerUps = powerUps)
     }
 
     private fun updateCameraAndScore(state: GameState): GameState {
@@ -255,27 +312,49 @@ class GameEngine(
                 lastPlatformX = highestPlatform?.x ?: (state.screenWidth / 2)
             )
 
-            // Generate flying obstacle (bird, bat, spike)
+            // Incrementar contador de plataformas
+            platformsSinceLastDamagingObstacle++
+
+            // Generate flying obstacle (bird, bat) - estos son comestibles, no dañinos
             val newObstacle = platformGenerator.generateObstacle(
                 screenWidth = state.screenWidth,
                 y = newPlatform.y,
                 level = state.level
             )
 
-            // Generate mouse on the platform
+            // Generate mouse on the platform (comestible)
             val mouseOnPlatform = platformGenerator.generateMouseOnPlatform(newPlatform)
 
-            // Generate dog on the platform (only if no mouse)
-            val dogOnPlatform = if (mouseOnPlatform == null) {
-                platformGenerator.generateDogOnPlatform(newPlatform)
+            // Solo generar obstáculos dañinos si han pasado suficientes plataformas
+            val canSpawnDamagingObstacle = platformsSinceLastDamagingObstacle >= GameConstants.MIN_DAMAGING_OBSTACLE_GAP
+
+            // Generate dog on the platform (only if no mouse and enough gap)
+            val dogOnPlatform = if (mouseOnPlatform == null && canSpawnDamagingObstacle) {
+                val dog = platformGenerator.generateDogOnPlatform(newPlatform)
+                if (dog != null) platformsSinceLastDamagingObstacle = 0
+                dog
+            } else null
+
+            // Generate cactus on the platform (only if no mouse, no dog, and enough gap)
+            val cactusOnPlatform = if (mouseOnPlatform == null && dogOnPlatform == null && canSpawnDamagingObstacle) {
+                val cactus = platformGenerator.generateCactusOnPlatform(newPlatform)
+                if (cactus != null) platformsSinceLastDamagingObstacle = 0
+                cactus
+            } else null
+
+            // Generate power-up (only if no obstacles on platform)
+            val powerUpOnPlatform = if (mouseOnPlatform == null && dogOnPlatform == null && cactusOnPlatform == null) {
+                platformGenerator.generatePowerUpOnPlatform(newPlatform)
             } else null
 
             // Collect all new obstacles
-            val newObstacles = listOfNotNull(newObstacle, mouseOnPlatform, dogOnPlatform)
+            val newObstacles = listOfNotNull(newObstacle, mouseOnPlatform, dogOnPlatform, cactusOnPlatform)
+            val newPowerUps = listOfNotNull(powerUpOnPlatform)
 
             return state.copy(
                 platforms = state.platforms + newPlatform,
-                obstacles = state.obstacles + newObstacles
+                obstacles = state.obstacles + newObstacles,
+                powerUps = state.powerUps + newPowerUps
             )
         }
 
@@ -283,8 +362,6 @@ class GameEngine(
     }
 
     private fun cleanupOffScreen(state: GameState): GameState {
-        val bottomOfScreen = state.cameraY + state.screenHeight
-
         return state.copy(
             platforms = platformGenerator.cleanupPlatforms(
                 state.platforms,
@@ -293,6 +370,11 @@ class GameEngine(
             ),
             obstacles = platformGenerator.cleanupObstacles(
                 state.obstacles,
+                state.cameraY,
+                state.screenHeight
+            ),
+            powerUps = platformGenerator.cleanupPowerUps(
+                state.powerUps,
                 state.cameraY,
                 state.screenHeight
             )

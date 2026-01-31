@@ -34,11 +34,15 @@ object GameConstants {
 
     // Dog spawn
     const val DOG_SIZE = 100f              // Perros más grandes
-    const val DOG_SPAWN_CHANCE = 0.25f     // 25% de probabilidad de perro en plataforma
+    const val DOG_SPAWN_CHANCE = 0.18f     // 18% de probabilidad de perro en plataforma
+    const val DOG_WALK_SPEED = 1.5f        // Velocidad de caminata del perro
 
     // Cactus spawn
     const val CACTUS_SIZE = 60f
-    const val CACTUS_SPAWN_CHANCE = 0.20f  // 20% de probabilidad de cactus en plataforma
+    const val CACTUS_SPAWN_CHANCE = 0.12f  // 12% de probabilidad de cactus en plataforma
+
+    // Spacing - evitar obstáculos dañinos muy seguidos
+    const val MIN_DAMAGING_OBSTACLE_GAP = 3  // Mínimo 3 plataformas entre obstáculos dañinos
 
     // Lives system
     const val INITIAL_LIVES = 3
@@ -47,14 +51,15 @@ object GameConstants {
     // Obstacles
     const val OBSTACLE_SIZE = 70f           // Obstáculos más grandes y visibles
     const val SPIDER_SIZE = 60f
-    const val SPIKE_WIDTH = 80f
-    const val SPIKE_HEIGHT = 40f
+    const val CACTUS_WIDTH = 60f
+    const val CACTUS_HEIGHT = 60f
 
     // Power-ups
-    const val POWERUP_SIZE = 60f
-    const val JETPACK_BOOST = -35f          // Velocidad del jetpack
-    const val JETPACK_DURATION = 2000L      // 2 segundos
-    const val CLOUD_BOOST = -8f             // Velocidad de la nube (lenta)
-    const val CLOUD_DURATION = 4000L        // 4 segundos
-    const val SHIELD_DURATION = 5000L       // 5 segundos de escudo
+    const val POWERUP_SIZE = 70f
+    const val POWERUP_SPAWN_CHANCE = 0.08f  // 8% de probabilidad de power-up
+    const val JETPACK_BOOST = -40f          // Velocidad del jetpack (muy rápido hacia arriba)
+    const val JETPACK_DURATION = 2500L      // 2.5 segundos
+    const val SUPER_JUMP_VELOCITY = -35f    // Velocidad del super salto
+    const val SUPER_JUMP_COUNT = 3          // Cantidad de super saltos que da la croqueta
+    const val SUPER_JUMP_DURATION = 8000L   // 8 segundos para usar los super saltos
 }

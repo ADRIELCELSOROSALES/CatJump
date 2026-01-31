@@ -6,6 +6,7 @@ data class GameState(
     val cat: Cat,
     val platforms: List<Platform>,
     val obstacles: List<Obstacle> = emptyList(),
+    val powerUps: List<PowerUp> = emptyList(),
     val score: Int = 0,
     val highScore: Int = 0,
     val level: Int = 1,
@@ -13,7 +14,8 @@ data class GameState(
     val isNewHighScore: Boolean = false,
     val cameraY: Float = 0f,
     val screenWidth: Float = 0f,
-    val screenHeight: Float = 0f
+    val screenHeight: Float = 0f,
+    val currentTime: Long = System.currentTimeMillis()
 ) {
     companion object {
         fun initial(screenWidth: Float, screenHeight: Float): GameState {

@@ -15,7 +15,7 @@ data class Obstacle(
     val y: Float,
     val width: Float = GameConstants.OBSTACLE_SIZE,
     val height: Float = GameConstants.OBSTACLE_SIZE,
-    val type: ObstacleType = ObstacleType.SPIKE,
+    val type: ObstacleType = ObstacleType.BIRD,
     val velocityX: Float = 0f,
     val velocityY: Float = 0f
 ) {
