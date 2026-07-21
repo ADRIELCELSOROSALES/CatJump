@@ -22,8 +22,9 @@ class SoundManager(private val context: Context) {
     private var dogSoundId2: Int = 0
     private var soundsLoaded = false
 
-    /** Preferencia de audio del usuario. Al desactivarse se corta la música. */
-    private var soundEnabled = true
+    /** Preferencias de audio del usuario (música y efectos por separado). */
+    private var musicEnabled = true
+    private var sfxEnabled = true
 
     init {
         val audioAttributes = AudioAttributes.Builder()
@@ -50,16 +51,21 @@ class SoundManager(private val context: Context) {
         dogSoundId2 = soundPool.load(context, R.raw.aparicionperroperro, 1)
     }
 
-    /** Activa/desactiva TODO el audio (efectos y música). */
-    fun setEnabled(enabled: Boolean) {
-        soundEnabled = enabled
+    /** Activa/desactiva la música de fondo. Al desactivarse, la corta. */
+    fun setMusicEnabled(enabled: Boolean) {
+        musicEnabled = enabled
         if (!enabled) {
             stopBackgroundMusic()
         }
     }
 
+    /** Activa/desactiva los efectos de sonido (salto, comer, perder vida, etc.). */
+    fun setSfxEnabled(enabled: Boolean) {
+        sfxEnabled = enabled
+    }
+
     fun startBackgroundMusic() {
-        if (!soundEnabled) return
+        if (!musicEnabled) return
         try {
             stopBackgroundMusic()
 
@@ -90,7 +96,7 @@ class SoundManager(private val context: Context) {
     }
 
     fun playGameOverSound() {
-        if (!soundEnabled) return
+        if (!sfxEnabled) return
         try {
             gameOverPlayer?.release()
 
@@ -108,19 +114,19 @@ class SoundManager(private val context: Context) {
     }
 
     fun playJumpSound() {
-        if (soundEnabled && soundsLoaded) {
+        if (sfxEnabled && soundsLoaded) {
             soundPool.play(jumpSoundId, 0.3f, 0.3f, 1, 0, 1f)
         }
     }
 
     fun playLoseLifeSound() {
-        if (soundEnabled && soundsLoaded) {
+        if (sfxEnabled && soundsLoaded) {
             soundPool.play(loseLifeSoundId, 0.6f, 0.6f, 2, 0, 1f)
         }
     }
 
     fun playDogAppearedSound() {
-        if (!soundEnabled || !soundsLoaded) return
+        if (!sfxEnabled || !soundsLoaded) return
         // Elegir aleatoriamente uno de los dos sonidos de perro
         val dogSoundId = if (Math.random() < 0.5) dogSoundId1 else dogSoundId2
         soundPool.play(dogSoundId, 0.6f, 0.6f, 1, 0, 1f)

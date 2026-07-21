@@ -10,9 +10,12 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -35,7 +38,9 @@ import com.example.catjump.presentation.components.SecondaryGameButton
 @Composable
 fun SettingsScreen(
     settings: GameSettings,
-    onSoundToggle: (Boolean) -> Unit,
+    onMusicToggle: (Boolean) -> Unit,
+    onSfxToggle: (Boolean) -> Unit,
+    onVibrationToggle: (Boolean) -> Unit,
     onControlModeSelected: (ControlMode) -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -46,6 +51,7 @@ fun SettingsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.safeDrawing)
                 .padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -58,34 +64,25 @@ fun SettingsScreen(
                 modifier = Modifier.padding(bottom = 32.dp)
             )
 
-            // --- Sonido ---
+            // --- Audio y vibración ---
             SettingCard {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "Sonido",
-                        color = Color.White,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Switch(
-                        checked = settings.soundEnabled,
-                        onCheckedChange = onSoundToggle,
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = Color(0xFF4CAF50),
-                            uncheckedThumbColor = Color.White,
-                            uncheckedTrackColor = Color(0xFF78909C)
-                        ),
-                        modifier = Modifier.semantics {
-                            contentDescription =
-                                if (settings.soundEnabled) "Sonido activado" else "Sonido desactivado"
-                        }
-                    )
-                }
+                ToggleRow(
+                    label = "Música",
+                    checked = settings.musicEnabled,
+                    onCheckedChange = onMusicToggle
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                ToggleRow(
+                    label = "Efectos",
+                    checked = settings.sfxEnabled,
+                    onCheckedChange = onSfxToggle
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                ToggleRow(
+                    label = "Vibración",
+                    checked = settings.vibrationEnabled,
+                    onCheckedChange = onVibrationToggle
+                )
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -140,6 +137,39 @@ private fun SettingCard(content: @Composable ColumnScope.() -> Unit) {
             .padding(20.dp),
         content = content
     )
+}
+
+@Composable
+private fun ToggleRow(
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            color = Color.White,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = Color(0xFF4CAF50),
+                uncheckedThumbColor = Color.White,
+                uncheckedTrackColor = Color(0xFF78909C)
+            ),
+            modifier = Modifier.semantics {
+                contentDescription = if (checked) "$label activado" else "$label desactivado"
+            }
+        )
+    }
 }
 
 @Composable

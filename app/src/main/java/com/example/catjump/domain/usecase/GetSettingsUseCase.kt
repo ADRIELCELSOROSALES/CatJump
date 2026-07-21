@@ -10,11 +10,15 @@ class GetSettingsUseCase(
     private val scoreRepository: ScoreRepository
 ) {
     operator fun invoke(): Flow<GameSettings> = combine(
-        scoreRepository.getSoundEnabled(),
+        scoreRepository.getMusicEnabled(),
+        scoreRepository.getSfxEnabled(),
+        scoreRepository.getVibrationEnabled(),
         scoreRepository.getControlMode()
-    ) { soundEnabled, controlModeId ->
+    ) { music, sfx, vibration, controlModeId ->
         GameSettings(
-            soundEnabled = soundEnabled,
+            musicEnabled = music,
+            sfxEnabled = sfx,
+            vibrationEnabled = vibration,
             controlMode = ControlMode.fromId(controlModeId)
         )
     }

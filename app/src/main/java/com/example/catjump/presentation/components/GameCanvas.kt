@@ -13,6 +13,8 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.nativeCanvas
 import com.example.catjump.domain.model.Cat
 import com.example.catjump.domain.model.CatSkin
 import com.example.catjump.domain.model.CatSkins
@@ -23,6 +25,9 @@ import com.example.catjump.domain.model.Platform
 import com.example.catjump.domain.model.PlatformType
 import com.example.catjump.domain.model.PowerUp
 import com.example.catjump.domain.model.PowerUpType
+import com.example.catjump.game.GameConstants
+import kotlin.math.cos
+import kotlin.math.sin
 
 @Composable
 fun GameCanvas(
@@ -36,25 +41,72 @@ fun GameCanvas(
         val gameState = gameStateProvider() ?: return@Canvas
         val cameraOffset = gameState.cameraY
 
-        // Draw platforms
-        gameState.platforms.forEach { platform ->
-            if (platform.isActive) {
-                drawPlatform(platform, cameraOffset)
+        // Sacudida de cámara (screen shake) al recibir daño: decae con el tiempo
+        val shakeAge = gameState.currentTime - gameState.shakeStartTime
+        val shakeDur = GameConstants.SHAKE_DURATION_MS
+        val shakeX: Float
+        val shakeY: Float
+        if (gameState.shakeStartTime > 0L && shakeAge in 0..shakeDur) {
+            val decay = 1f - shakeAge.toFloat() / shakeDur
+            val mag = gameState.shakeMagnitude * decay
+            shakeX = sin(shakeAge * 0.05f) * mag
+            shakeY = cos(shakeAge * 0.09f) * mag
+        } else {
+            shakeX = 0f
+            shakeY = 0f
+        }
+
+        translate(shakeX, shakeY) {
+            // Draw platforms
+            gameState.platforms.forEach { platform ->
+                if (platform.isActive) {
+                    drawPlatform(platform, cameraOffset)
+                }
             }
+
+            // Draw obstacles
+            gameState.obstacles.forEach { obstacle ->
+                drawObstacle(obstacle, cameraOffset)
+            }
+
+            // Draw power-ups
+            gameState.powerUps.forEach { powerUp ->
+                drawPowerUp(powerUp, cameraOffset)
+            }
+
+            // Draw cat with skin
+            drawCat(gameState.cat, cameraOffset, catSkin)
+
+            // Draw floating "+1" popups
+            drawEatPopups(gameState, cameraOffset)
         }
 
-        // Draw obstacles
-        gameState.obstacles.forEach { obstacle ->
-            drawObstacle(obstacle, cameraOffset)
+        // Destello verde al ganar vida (espacio de pantalla, sin shake)
+        val flashRemaining = gameState.gainLifeFlashUntil - gameState.currentTime
+        if (flashRemaining > 0) {
+            val alpha = (flashRemaining.toFloat() / GameConstants.GAIN_LIFE_FLASH_MS)
+                .coerceIn(0f, 1f) * 0.3f
+            drawRect(color = Color(0xFF4CAF50).copy(alpha = alpha), size = size)
         }
+    }
+}
 
-        // Draw power-ups
-        gameState.powerUps.forEach { powerUp ->
-            drawPowerUp(powerUp, cameraOffset)
+private fun DrawScope.drawEatPopups(gameState: GameState, cameraOffset: Float) {
+    gameState.eatPopups.forEach { popup ->
+        val age = (gameState.currentTime - popup.createdTime).coerceAtLeast(0L)
+        val t = age.toFloat() / GameConstants.EAT_POPUP_DURATION_MS
+        if (t in 0f..1f) {
+            val screenY = popup.y - cameraOffset - t * 60f
+            val alpha = (1f - t).coerceIn(0f, 1f)
+            val paint = android.graphics.Paint().apply {
+                color = android.graphics.Color.argb((alpha * 255).toInt(), 255, 235, 59)
+                textSize = 44f
+                isFakeBoldText = true
+                textAlign = android.graphics.Paint.Align.CENTER
+                isAntiAlias = true
+            }
+            drawContext.canvas.nativeCanvas.drawText(popup.text, popup.x, screenY, paint)
         }
-
-        // Draw cat with skin
-        drawCat(gameState.cat, cameraOffset, catSkin)
     }
 }
 

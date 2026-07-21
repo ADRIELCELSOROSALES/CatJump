@@ -1,5 +1,11 @@
 package com.example.catjump.presentation.screens
 
+import android.content.Context
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -7,21 +13,24 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import android.content.Context
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,9 +39,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -47,6 +58,7 @@ import com.example.catjump.presentation.components.GameButton
 import com.example.catjump.presentation.components.GameCanvas
 import com.example.catjump.presentation.components.ScoreDisplay
 import com.example.catjump.presentation.components.SecondaryGameButton
+import kotlinx.coroutines.delay
 
 @Composable
 fun GameScreen(
@@ -62,10 +74,19 @@ fun GameScreen(
     onResume: () -> Unit,
     onExitToMenu: () -> Unit,
     controlMode: ControlMode = ControlMode.TAP,
+    tutorialSeen: Boolean = true,
+    onTutorialDismissed: () -> Unit = {},
     modifier: Modifier = Modifier,
     catSkin: CatSkin = CatSkins.ORANGE
 ) {
     val density = LocalDensity.current
+
+    // Mantener la pantalla encendida mientras se juega
+    val view = LocalView.current
+    DisposableEffect(Unit) {
+        view.keepScreenOn = true
+        onDispose { view.keepScreenOn = false }
+    }
 
     BoxWithConstraints(
         modifier = modifier.fillMaxSize()
@@ -87,16 +108,32 @@ fun GameScreen(
                     .background(Color(0xFF1a237e)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "Loading...", color = Color.White)
+                Text(text = "Cargando...", color = Color.White)
             }
             return@BoxWithConstraints
         }
 
-        // --- Reloj de frames: sincroniza la física con el refresh real de la pantalla ---
-        // Se detiene solo cuando isPaused == true (el efecto se cancela) y también cuando la
-        // app está en segundo plano (Choreographer no emite frames), evitando morir en pausa.
-        LaunchedEffect(isPaused) {
-            if (isPaused) return@LaunchedEffect
+        // --- Fases de arranque: tutorial (1ra vez) -> cuenta regresiva -> jugar ---
+        var tutorialDismissed by remember(isReady) { mutableStateOf(false) }
+        val showTutorial = !tutorialSeen && !tutorialDismissed
+        val tutorialResolved = tutorialSeen || tutorialDismissed
+
+        var countdown by remember(isReady) { mutableIntStateOf(GameConstants.COUNTDOWN_SECONDS) }
+        LaunchedEffect(tutorialResolved) {
+            if (tutorialResolved) {
+                while (countdown > 0) {
+                    delay(GameConstants.COUNTDOWN_STEP_MS)
+                    countdown--
+                }
+            }
+        }
+
+        val canPlay = tutorialResolved && countdown == 0
+
+        // --- Reloj de frames: solo corre cuando se puede jugar y no está en pausa ---
+        // Se detiene con la app en segundo plano (Choreographer no emite frames).
+        LaunchedEffect(canPlay, isPaused) {
+            if (!canPlay || isPaused) return@LaunchedEffect
             var lastFrameNanos = 0L
             while (true) {
                 val frameNanos = withFrameNanos { it }
@@ -115,6 +152,11 @@ fun GameScreen(
             onPause()
         }
 
+        // Botón atrás: pausa mientras se juega, reanuda si ya estaba en pausa
+        BackHandler {
+            if (isPaused) onResume() else onPause()
+        }
+
         Box(modifier = Modifier.fillMaxSize()) {
             // Fondo con parallax (lee cameraY/score de forma diferida en su Canvas)
             GameBackground(
@@ -125,12 +167,12 @@ fun GameScreen(
             // Elementos del juego: lee el estado dentro del draw del Canvas (sin recomposición)
             GameCanvas(gameStateProvider = gameStateProvider, catSkin = catSkin)
 
-            // Control por toque (mitad izquierda/derecha), solo en modo TAP y sin pausa
+            // Control por toque (mitad izquierda/derecha), solo en modo TAP mientras se juega
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .pointerInput(isPaused, controlMode) {
-                        if (!isPaused && controlMode == ControlMode.TAP) {
+                    .pointerInput(canPlay, isPaused, controlMode) {
+                        if (canPlay && !isPaused && controlMode == ControlMode.TAP) {
                             detectTapGestures(
                                 onPress = { offset ->
                                     if (offset.x < size.width / 2) onMoveLeft() else onMoveRight()
@@ -142,24 +184,27 @@ fun GameScreen(
                     }
             )
 
-            // Control por inclinación (acelerómetro), solo en modo TILT y sin pausa
+            // Control por inclinación (acelerómetro), solo en modo TILT mientras se juega
             TiltControl(
-                enabled = !isPaused && controlMode == ControlMode.TILT,
+                enabled = canPlay && !isPaused && controlMode == ControlMode.TILT,
                 onMoveLeft = onMoveLeft,
                 onMoveRight = onMoveRight,
                 onStopMoving = onStopMoving
             )
 
-            // HUD (recomposición acotada a este composable vía lectura diferida)
+            // HUD (recomposición acotada + respeta insets del sistema)
             GameHud(
                 gameStateProvider = gameStateProvider,
-                modifier = Modifier.align(Alignment.TopCenter)
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
             )
 
-            // Botón de pausa
+            // Botón de pausa (respeta insets)
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
                     .padding(12.dp)
                     .size(44.dp)
                     .clip(CircleShape)
@@ -169,6 +214,22 @@ fun GameScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(text = "II", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            }
+
+            // Cuenta regresiva de inicio
+            if (tutorialResolved && countdown > 0 && !isPaused) {
+                CountdownOverlay(count = countdown)
+            }
+
+            // Tutorial de primera vez
+            if (showTutorial) {
+                TutorialOverlay(
+                    controlMode = controlMode,
+                    onDismiss = {
+                        tutorialDismissed = true
+                        onTutorialDismissed()
+                    }
+                )
             }
 
             // Overlay de pausa
@@ -210,9 +271,10 @@ private fun TiltControl(
             override fun onSensorChanged(event: SensorEvent) {
                 val x = event.values[0]
                 val threshold = 1.5f // zona muerta para evitar jitter
+                // Mapeo: inclinar el teléfono hacia un lado mueve al gato hacia ese lado.
                 val dir = when {
-                    x < -threshold -> -1 // inclinado a la izquierda
-                    x > threshold -> 1   // inclinado a la derecha
+                    x < -threshold -> 1  // eje X negativo -> mover a la derecha
+                    x > threshold -> -1  // eje X positivo -> mover a la izquierda
                     else -> 0
                 }
                 if (dir != lastDir) {
@@ -253,6 +315,78 @@ private fun GameHud(
         lives = state.cat.lives,
         modifier = modifier
     )
+}
+
+@Composable
+private fun CountdownOverlay(count: Int) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.35f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = count.toString(),
+            color = Color.White,
+            fontSize = 96.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun TutorialOverlay(
+    controlMode: ControlMode,
+    onDismiss: () -> Unit
+) {
+    val controlText = when (controlMode) {
+        ControlMode.TAP -> "Tocá el lado izquierdo o derecho de la pantalla para mover al gato."
+        ControlMode.TILT -> "Incliná el teléfono a los lados para mover al gato."
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.8f))
+            .pointerInput(Unit) { detectTapGestures { } },
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "CÓMO JUGAR",
+                color = Color(0xFFFFD700),
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .padding(20.dp)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(controlText, color = Color.White, fontSize = 16.sp, textAlign = TextAlign.Center)
+                    Text(
+                        "Saltá sobre las plataformas para subir.",
+                        color = Color.White, fontSize = 16.sp, textAlign = TextAlign.Center
+                    )
+                    Text(
+                        "Comé pájaros y ratones, esquivá perros y cactus. ¡No caigas!",
+                        color = Color.White, fontSize = 16.sp, textAlign = TextAlign.Center
+                    )
+                }
+            }
+            GameButton(text = "¡Entendido!", onClick = onDismiss)
+        }
+    }
 }
 
 @Composable

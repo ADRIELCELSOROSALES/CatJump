@@ -5,17 +5,21 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -65,6 +69,9 @@ fun GameOverScreen(
         label = "star_alpha"
     )
 
+    // Botón atrás en Game Over: ir al menú
+    BackHandler { onMenuClick() }
+
     Box(modifier = modifier.fillMaxSize()) {
         // Background
         GameBackground(cameraYProvider = { 0f }, scoreProvider = { score })
@@ -79,6 +86,7 @@ fun GameOverScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.safeDrawing)
                 .padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -120,7 +128,7 @@ fun GameOverScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "SCORE",
+                        text = "PUNTAJE",
                         color = Color.White.copy(alpha = 0.7f),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium
@@ -144,7 +152,7 @@ fun GameOverScreen(
                             modifier = Modifier.alpha(starAlpha)
                         ) {
                             Text(
-                                text = "NEW RECORD!",
+                                text = "¡NUEVO RÉCORD!",
                                 color = Color(0xFFFFD700),
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
@@ -153,7 +161,7 @@ fun GameOverScreen(
                     } else {
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "BEST: $highScore",
+                            text = "MEJOR: $highScore",
                             color = Color(0xFFFFD700),
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Medium
@@ -166,14 +174,14 @@ fun GameOverScreen(
 
             // Buttons
             GameButton(
-                text = "TRY AGAIN",
+                text = "REINTENTAR",
                 onClick = onRetryClick
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             SecondaryGameButton(
-                text = "MENU",
+                text = "MENÚ",
                 onClick = onMenuClick
             )
 
@@ -182,11 +190,11 @@ fun GameOverScreen(
             // Encouragement text
             Text(
                 text = if (isNewHighScore) {
-                    "Amazing! You beat your record!"
+                    "¡Increíble! ¡Superaste tu récord!"
                 } else if (score > highScore * 0.8f && highScore > 0) {
-                    "So close! Try again!"
+                    "¡Por poco! ¡Probá de nuevo!"
                 } else {
-                    "Keep jumping, you got this!"
+                    "¡Seguí saltando, vos podés!"
                 },
                 color = Color.White.copy(alpha = 0.7f),
                 fontSize = 14.sp,

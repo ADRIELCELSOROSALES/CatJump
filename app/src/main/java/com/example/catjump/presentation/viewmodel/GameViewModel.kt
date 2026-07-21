@@ -11,14 +11,16 @@ import com.example.catjump.domain.model.CatSkins
 import com.example.catjump.domain.model.ControlMode
 import com.example.catjump.domain.model.GameSettings
 import com.example.catjump.domain.model.GameState
+import com.example.catjump.domain.model.HapticEvent
 import com.example.catjump.domain.model.SoundEvent
 import com.example.catjump.domain.usecase.GetHighScoreUseCase
 import com.example.catjump.domain.usecase.GetSelectedSkinUseCase
 import com.example.catjump.domain.usecase.GetSettingsUseCase
+import com.example.catjump.domain.usecase.SaveAudioSettingsUseCase
 import com.example.catjump.domain.usecase.SaveControlModeUseCase
 import com.example.catjump.domain.usecase.SaveHighScoreUseCase
 import com.example.catjump.domain.usecase.SaveSelectedSkinUseCase
-import com.example.catjump.domain.usecase.SaveSoundEnabledUseCase
+import com.example.catjump.domain.usecase.TutorialUseCase
 import com.example.catjump.game.GameEngine
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,8 +53,9 @@ class GameViewModel(
     private val getSelectedSkinUseCase: GetSelectedSkinUseCase,
     private val saveSelectedSkinUseCase: SaveSelectedSkinUseCase,
     private val getSettingsUseCase: GetSettingsUseCase,
-    private val saveSoundEnabledUseCase: SaveSoundEnabledUseCase,
-    private val saveControlModeUseCase: SaveControlModeUseCase
+    private val saveAudioSettingsUseCase: SaveAudioSettingsUseCase,
+    private val saveControlModeUseCase: SaveControlModeUseCase,
+    private val tutorialUseCase: TutorialUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<GameUiState>(GameUiState.Menu)
@@ -66,6 +69,13 @@ class GameViewModel(
 
     private val _settings = MutableStateFlow(GameSettings())
     val settings: StateFlow<GameSettings> = _settings.asStateFlow()
+
+    private val _tutorialSeen = MutableStateFlow(false)
+    val tutorialSeen: StateFlow<Boolean> = _tutorialSeen.asStateFlow()
+
+    /** Eventos de vibración de este frame, desacoplados del render. */
+    private val _hapticEvents = MutableSharedFlow<HapticEvent>(extraBufferCapacity = 16)
+    val hapticEvents: SharedFlow<HapticEvent> = _hapticEvents.asSharedFlow()
 
     /** Estado del juego por-frame. Se lee de forma diferida dentro del Canvas. */
     var gameState by mutableStateOf<GameState?>(null)
@@ -85,6 +95,7 @@ class GameViewModel(
         loadHighScore()
         loadSelectedSkin()
         loadSettings()
+        loadTutorialSeen()
     }
 
     private fun loadSettings() {
@@ -95,12 +106,32 @@ class GameViewModel(
         }
     }
 
-    fun setSoundEnabled(enabled: Boolean) {
-        viewModelScope.launch { saveSoundEnabledUseCase(enabled) }
+    private fun loadTutorialSeen() {
+        viewModelScope.launch {
+            tutorialUseCase.hasSeen().collect { seen ->
+                _tutorialSeen.value = seen
+            }
+        }
+    }
+
+    fun setMusicEnabled(enabled: Boolean) {
+        viewModelScope.launch { saveAudioSettingsUseCase.setMusicEnabled(enabled) }
+    }
+
+    fun setSfxEnabled(enabled: Boolean) {
+        viewModelScope.launch { saveAudioSettingsUseCase.setSfxEnabled(enabled) }
+    }
+
+    fun setVibrationEnabled(enabled: Boolean) {
+        viewModelScope.launch { saveAudioSettingsUseCase.setVibrationEnabled(enabled) }
     }
 
     fun setControlMode(mode: ControlMode) {
         viewModelScope.launch { saveControlModeUseCase(mode) }
+    }
+
+    fun markTutorialSeen() {
+        viewModelScope.launch { tutorialUseCase.markSeen() }
     }
 
     private fun loadHighScore() {
@@ -155,11 +186,13 @@ class GameViewModel(
         val newState = gameEngine.update(state, nowMs, deltaFrames)
         gameState = newState
 
-        // Emitir eventos de sonido de este frame
+        // Emitir eventos de sonido y vibración de este frame
         newState.soundEvents.forEach { _soundEvents.tryEmit(it) }
+        newState.hapticEvents.forEach { _hapticEvents.tryEmit(it) }
 
         if (newState.isGameOver) {
             isRunning = false
+            _hapticEvents.tryEmit(HapticEvent.GAME_OVER)
             handleGameOver(newState)
         }
     }
@@ -237,8 +270,9 @@ class GameViewModelFactory(
     private val getSelectedSkinUseCase: GetSelectedSkinUseCase,
     private val saveSelectedSkinUseCase: SaveSelectedSkinUseCase,
     private val getSettingsUseCase: GetSettingsUseCase,
-    private val saveSoundEnabledUseCase: SaveSoundEnabledUseCase,
-    private val saveControlModeUseCase: SaveControlModeUseCase
+    private val saveAudioSettingsUseCase: SaveAudioSettingsUseCase,
+    private val saveControlModeUseCase: SaveControlModeUseCase,
+    private val tutorialUseCase: TutorialUseCase
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
@@ -251,8 +285,9 @@ class GameViewModelFactory(
                 getSelectedSkinUseCase = getSelectedSkinUseCase,
                 saveSelectedSkinUseCase = saveSelectedSkinUseCase,
                 getSettingsUseCase = getSettingsUseCase,
-                saveSoundEnabledUseCase = saveSoundEnabledUseCase,
-                saveControlModeUseCase = saveControlModeUseCase
+                saveAudioSettingsUseCase = saveAudioSettingsUseCase,
+                saveControlModeUseCase = saveControlModeUseCase,
+                tutorialUseCase = tutorialUseCase
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

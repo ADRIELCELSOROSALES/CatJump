@@ -7,10 +7,11 @@ import com.example.catjump.domain.repository.ScoreRepository
 import com.example.catjump.domain.usecase.GetHighScoreUseCase
 import com.example.catjump.domain.usecase.GetSelectedSkinUseCase
 import com.example.catjump.domain.usecase.GetSettingsUseCase
+import com.example.catjump.domain.usecase.SaveAudioSettingsUseCase
 import com.example.catjump.domain.usecase.SaveControlModeUseCase
 import com.example.catjump.domain.usecase.SaveHighScoreUseCase
 import com.example.catjump.domain.usecase.SaveSelectedSkinUseCase
-import com.example.catjump.domain.usecase.SaveSoundEnabledUseCase
+import com.example.catjump.domain.usecase.TutorialUseCase
 import com.example.catjump.game.CollisionDetector
 import com.example.catjump.game.DifficultyManager
 import com.example.catjump.game.GameEngine
@@ -28,8 +29,9 @@ class AppContainer(context: Context) {
     val getSelectedSkinUseCase = GetSelectedSkinUseCase(scoreRepository)
     val saveSelectedSkinUseCase = SaveSelectedSkinUseCase(scoreRepository)
     val getSettingsUseCase = GetSettingsUseCase(scoreRepository)
-    val saveSoundEnabledUseCase = SaveSoundEnabledUseCase(scoreRepository)
+    val saveAudioSettingsUseCase = SaveAudioSettingsUseCase(scoreRepository)
     val saveControlModeUseCase = SaveControlModeUseCase(scoreRepository)
+    val tutorialUseCase = TutorialUseCase(scoreRepository)
 
     // Game Engine Components
     private val difficultyManager = DifficultyManager()

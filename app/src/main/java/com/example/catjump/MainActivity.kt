@@ -53,8 +53,9 @@ class MainActivity : ComponentActivity() {
                                 getSelectedSkinUseCase = appContainer.getSelectedSkinUseCase,
                                 saveSelectedSkinUseCase = appContainer.saveSelectedSkinUseCase,
                                 getSettingsUseCase = appContainer.getSettingsUseCase,
-                                saveSoundEnabledUseCase = appContainer.saveSoundEnabledUseCase,
-                                saveControlModeUseCase = appContainer.saveControlModeUseCase
+                                saveAudioSettingsUseCase = appContainer.saveAudioSettingsUseCase,
+                                saveControlModeUseCase = appContainer.saveControlModeUseCase,
+                                tutorialUseCase = appContainer.tutorialUseCase
                             )
                         )
                         Log.d(TAG, "ViewModel created")

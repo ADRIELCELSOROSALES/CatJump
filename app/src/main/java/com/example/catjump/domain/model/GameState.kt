@@ -17,6 +17,11 @@ data class GameState(
     val screenHeight: Float = 0f,
     val currentTime: Long = 0L,  // Reloj monotónico (ms), fijado por el motor en cada tick
     val soundEvents: List<SoundEvent> = emptyList(),
+    val hapticEvents: List<HapticEvent> = emptyList(),
+    val eatPopups: List<EatPopup> = emptyList(),
+    val shakeStartTime: Long = 0L,      // Inicio de la sacudida de cámara
+    val shakeMagnitude: Float = 0f,     // Intensidad de la sacudida (px)
+    val gainLifeFlashUntil: Long = 0L,  // Hasta cuándo se muestra el destello verde
     val activeDogCount: Int = 0
 ) {
     companion object {

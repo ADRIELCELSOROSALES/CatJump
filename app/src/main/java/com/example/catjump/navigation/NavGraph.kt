@@ -11,8 +11,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.catjump.audio.HapticManager
 import com.example.catjump.audio.SoundManager
 import com.example.catjump.domain.model.CatSkin
+import com.example.catjump.domain.model.HapticEvent
 import com.example.catjump.domain.model.SoundEvent
 import com.example.catjump.presentation.screens.GameOverScreen
 import com.example.catjump.presentation.screens.GameScreen
@@ -38,6 +40,7 @@ fun CatJumpNavGraph(
 ) {
     val context = LocalContext.current
     val soundManager = remember { SoundManager(context) }
+    val hapticManager = remember { HapticManager(context) }
 
     // Cleanup when composable is disposed
     DisposableEffect(Unit) {
@@ -50,10 +53,16 @@ fun CatJumpNavGraph(
     val highScore by viewModel.highScore.collectAsState()
     val selectedSkin by viewModel.selectedSkin.collectAsState()
     val settings by viewModel.settings.collectAsState()
+    val tutorialSeen by viewModel.tutorialSeen.collectAsState()
 
-    // Aplicar preferencia de audio (mutea efectos y corta música al desactivar)
-    LaunchedEffect(settings.soundEnabled) {
-        soundManager.setEnabled(settings.soundEnabled)
+    // Aplicar preferencias de audio y vibración
+    LaunchedEffect(settings.musicEnabled) { soundManager.setMusicEnabled(settings.musicEnabled) }
+    LaunchedEffect(settings.sfxEnabled) { soundManager.setSfxEnabled(settings.sfxEnabled) }
+    LaunchedEffect(settings.vibrationEnabled) { hapticManager.setEnabled(settings.vibrationEnabled) }
+
+    // Vibración: colector global para no perder eventos entre transiciones de pantalla
+    LaunchedEffect(Unit) {
+        viewModel.hapticEvents.collect { event -> hapticManager.vibrate(event) }
     }
 
     NavHost(
@@ -87,7 +96,16 @@ fun CatJumpNavGraph(
         composable(Screen.Settings.route) {
             SettingsScreen(
                 settings = settings,
-                onSoundToggle = { enabled -> viewModel.setSoundEnabled(enabled) },
+                onMusicToggle = { enabled -> viewModel.setMusicEnabled(enabled) },
+                onSfxToggle = { enabled -> viewModel.setSfxEnabled(enabled) },
+                onVibrationToggle = { enabled ->
+                    viewModel.setVibrationEnabled(enabled)
+                    // Buzz de prueba inmediato al activar (sin esperar el DataStore)
+                    if (enabled) {
+                        hapticManager.setEnabled(true)
+                        hapticManager.vibrate(HapticEvent.LOSE_LIFE)
+                    }
+                },
                 onControlModeSelected = { mode -> viewModel.setControlMode(mode) },
                 onBackClick = { navController.popBackStack() }
             )
@@ -106,9 +124,9 @@ fun CatJumpNavGraph(
         composable(Screen.Game.route) {
             val state = uiState
 
-            // Música de fondo (reacciona al mute)
-            LaunchedEffect(settings.soundEnabled) {
-                if (settings.soundEnabled) {
+            // Música de fondo (reacciona al mute de música)
+            LaunchedEffect(settings.musicEnabled) {
+                if (settings.musicEnabled) {
                     soundManager.startBackgroundMusic()
                 } else {
                     soundManager.stopBackgroundMusic()
@@ -154,6 +172,8 @@ fun CatJumpNavGraph(
                         }
                     },
                     controlMode = settings.controlMode,
+                    tutorialSeen = tutorialSeen,
+                    onTutorialDismissed = viewModel::markTutorialSeen,
                     catSkin = selectedSkin
                 )
             }

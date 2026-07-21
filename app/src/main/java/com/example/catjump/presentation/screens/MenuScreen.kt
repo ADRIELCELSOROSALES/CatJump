@@ -11,11 +11,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -76,6 +79,7 @@ fun MenuScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.safeDrawing)
                 .padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -149,7 +153,7 @@ fun MenuScreen(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "BEST SCORE",
+                            text = "MEJOR PUNTAJE",
                             color = Color.White.copy(alpha = 0.7f),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium
@@ -168,11 +172,11 @@ fun MenuScreen(
 
             // Play button
             GameButton(
-                text = "PLAY",
+                text = "JUGAR",
                 onClick = onPlayClick
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // Instructions
             Box(
@@ -181,30 +185,33 @@ fun MenuScreen(
                         color = Color.Black.copy(alpha = 0.4f),
                         shape = RoundedCornerShape(8.dp)
                     )
-                    .padding(16.dp)
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "HOW TO PLAY",
+                        text = "CÓMO JUGAR",
                         color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Tap left or right side to move",
+                        text = "Tocá los lados para mover al gato",
                         color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 12.sp
+                        fontSize = 12.sp,
+                        lineHeight = 15.sp
                     )
                     Text(
-                        text = "Jump on platforms to go higher",
+                        text = "Saltá sobre las plataformas para subir",
                         color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 12.sp
+                        fontSize = 12.sp,
+                        lineHeight = 15.sp
                     )
                     Text(
-                        text = "Avoid obstacles and don't fall!",
+                        text = "Esquivá obstáculos y ¡no caigas!",
                         color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 12.sp
+                        fontSize = 12.sp,
+                        lineHeight = 15.sp
                     )
                 }
             }

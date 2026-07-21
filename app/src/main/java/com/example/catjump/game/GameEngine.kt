@@ -1,7 +1,9 @@
 package com.example.catjump.game
 
 import com.example.catjump.domain.model.Cat
+import com.example.catjump.domain.model.EatPopup
 import com.example.catjump.domain.model.GameState
+import com.example.catjump.domain.model.HapticEvent
 import com.example.catjump.domain.model.ObstacleType
 import com.example.catjump.domain.model.Platform
 import com.example.catjump.domain.model.PlatformType
@@ -42,8 +44,12 @@ class GameEngine(
 
         val dt = deltaFrames.coerceIn(0f, GameConstants.MAX_DELTA_FRAMES)
 
-        // Clear sound events from previous frame
-        var newState = state.copy(currentTime = nowMs, soundEvents = emptyList())
+        // Clear per-frame events (sound + haptics) from previous frame
+        var newState = state.copy(
+            currentTime = nowMs,
+            soundEvents = emptyList(),
+            hapticEvents = emptyList()
+        )
 
         // Update power-up timers
         newState = updatePowerUpTimers(newState)
@@ -195,6 +201,11 @@ class GameEngine(
         var powerUps = state.powerUps
         val currentTime = state.currentTime
         val soundEvents = state.soundEvents.toMutableList()
+        val hapticEvents = state.hapticEvents.toMutableList()
+        var eatPopups = state.eatPopups
+        var gainLifeFlashUntil = state.gainLifeFlashUntil
+        var shakeStartTime = state.shakeStartTime
+        var shakeMagnitude = state.shakeMagnitude
 
         // Decrease invincibility frames (escalado por delta-time)
         if (cat.invincibilityFrames > 0f) {
@@ -233,8 +244,11 @@ class GameEngine(
                 lives = newLives,
                 invincibilityFrames = GameConstants.INVINCIBILITY_FRAMES
             )
-            // Add lose life sound event
+            // Feedback: sonido, vibración y sacudida de cámara
             soundEvents.add(SoundEvent.LOSE_LIFE)
+            hapticEvents.add(HapticEvent.LOSE_LIFE)
+            shakeStartTime = currentTime
+            shakeMagnitude = GameConstants.SHAKE_MAGNITUDE
             // Los perros y cactus NO desaparecen al hacer daño
         }
 
@@ -251,13 +265,24 @@ class GameEngine(
             }
 
             // Cada 5 animalitos comidos, gana una vida (máximo 3 vidas)
-            val newLives = if (newBirdsEaten % 5 == 0 && cat.lives < GameConstants.INITIAL_LIVES) {
-                cat.lives + 1
-            } else {
-                cat.lives
-            }
+            val gainedLife = newBirdsEaten % 5 == 0 && cat.lives < GameConstants.INITIAL_LIVES
+            val newLives = if (gainedLife) cat.lives + 1 else cat.lives
 
             cat = cat.copy(fatness = newFatness, birdsEaten = newBirdsEaten, lives = newLives)
+
+            // Feedback: vibración + texto flotante "+1"
+            hapticEvents.add(HapticEvent.EAT)
+            eatPopups = eatPopups + EatPopup(
+                id = currentTime + edibleObstacle.hashCode(),
+                x = edibleObstacle.centerX,
+                y = edibleObstacle.y,
+                createdTime = currentTime
+            )
+            if (gainedLife) {
+                hapticEvents.add(HapticEvent.GAIN_LIFE)
+                gainLifeFlashUntil = currentTime + GameConstants.GAIN_LIFE_FLASH_MS
+            }
+
             // Remove the eaten obstacle
             obstacles = obstacles.filter { it != edibleObstacle }
         }
@@ -289,8 +314,11 @@ class GameEngine(
                     state.platforms
                 }
 
-                // Add jump sound event
+                // Add jump sound event (+ haptic si es resorte)
                 soundEvents.add(SoundEvent.JUMP)
+                if (collidingPlatform.type == PlatformType.SPRING) {
+                    hapticEvents.add(HapticEvent.SPRING)
+                }
 
                 return state.copy(
                     cat = cat.copy(
@@ -301,12 +329,27 @@ class GameEngine(
                     platforms = updatedPlatforms,
                     obstacles = obstacles,
                     powerUps = powerUps,
-                    soundEvents = soundEvents
+                    soundEvents = soundEvents,
+                    hapticEvents = hapticEvents,
+                    eatPopups = eatPopups,
+                    gainLifeFlashUntil = gainLifeFlashUntil,
+                    shakeStartTime = shakeStartTime,
+                    shakeMagnitude = shakeMagnitude
                 )
             }
         }
 
-        return state.copy(cat = cat, obstacles = obstacles, powerUps = powerUps, soundEvents = soundEvents)
+        return state.copy(
+            cat = cat,
+            obstacles = obstacles,
+            powerUps = powerUps,
+            soundEvents = soundEvents,
+            hapticEvents = hapticEvents,
+            eatPopups = eatPopups,
+            gainLifeFlashUntil = gainLifeFlashUntil,
+            shakeStartTime = shakeStartTime,
+            shakeMagnitude = shakeMagnitude
+        )
     }
 
     private fun updateCameraAndScore(state: GameState): GameState {
@@ -417,6 +460,11 @@ class GameEngine(
         )
         val activeDogCount = cleanedObstacles.count { it.type == ObstacleType.DOG }
 
+        // Eliminar textos flotantes "+1" ya expirados
+        val prunedPopups = state.eatPopups.filter {
+            state.currentTime - it.createdTime <= GameConstants.EAT_POPUP_DURATION_MS
+        }
+
         return state.copy(
             platforms = platformGenerator.cleanupPlatforms(
                 state.platforms,
@@ -429,6 +477,7 @@ class GameEngine(
                 state.cameraY,
                 state.screenHeight
             ),
+            eatPopups = prunedPopups,
             activeDogCount = activeDogCount
         )
     }

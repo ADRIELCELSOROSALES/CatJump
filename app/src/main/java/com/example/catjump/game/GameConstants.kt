@@ -30,6 +30,10 @@ object GameConstants {
     const val TARGET_FRAME_MS = 12f         // Frame de referencia
     const val MAX_DELTA_FRAMES = 1.8f       // Tope anti-tunneling tras pausas/lag (~45 FPS efectivos)
 
+    // Cuenta regresiva de inicio
+    const val COUNTDOWN_SECONDS = 3
+    const val COUNTDOWN_STEP_MS = 700L
+
     // Fatness system
     const val FATNESS_GAIN_PER_BIRD = 0.1f  // Cuánto engorda al comer (10 pájaros = máximo)
     const val MAX_FATNESS = 1f              // Máximo de gordura (10 pájaros)
@@ -54,6 +58,12 @@ object GameConstants {
     // Lives system
     const val INITIAL_LIVES = 3
     const val INVINCIBILITY_FRAMES = 60f    // Duración de invencibilidad en frames de referencia (~0.72s)
+
+    // Feedback visual (efectos)
+    const val SHAKE_MAGNITUDE = 22f         // Intensidad de la sacudida de cámara al recibir daño (px)
+    const val SHAKE_DURATION_MS = 350L      // Duración de la sacudida
+    const val GAIN_LIFE_FLASH_MS = 500L     // Duración del destello verde al ganar vida
+    const val EAT_POPUP_DURATION_MS = 700L  // Duración del texto flotante "+1"
 
     // Obstacles
     const val OBSTACLE_SIZE = 70f           // Obstáculos más grandes y visibles

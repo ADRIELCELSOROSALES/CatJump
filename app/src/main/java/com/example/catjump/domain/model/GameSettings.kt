@@ -13,6 +13,8 @@ enum class ControlMode {
 
 /** Preferencias del jugador persistidas localmente. */
 data class GameSettings(
-    val soundEnabled: Boolean = true,
+    val musicEnabled: Boolean = true,
+    val sfxEnabled: Boolean = true,
+    val vibrationEnabled: Boolean = true,
     val controlMode: ControlMode = ControlMode.TAP
 )
