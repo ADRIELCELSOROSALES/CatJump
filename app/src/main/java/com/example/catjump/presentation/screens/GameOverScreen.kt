@@ -67,7 +67,7 @@ fun GameOverScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         // Background
-        GameBackground(cameraY = 0f)
+        GameBackground(cameraYProvider = { 0f }, scoreProvider = { score })
 
         // Semi-transparent overlay
         Box(

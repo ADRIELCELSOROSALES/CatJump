@@ -3,6 +3,7 @@ package com.example.catjump.data.local
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -17,6 +18,8 @@ class ScoreDataStore(private val context: Context) {
     private object PreferencesKeys {
         val HIGH_SCORE = intPreferencesKey("high_score")
         val SELECTED_SKIN = stringPreferencesKey("selected_skin")
+        val SOUND_ENABLED = booleanPreferencesKey("sound_enabled")
+        val CONTROL_MODE = stringPreferencesKey("control_mode")
     }
 
     val highScore: Flow<Int> = context.dataStore.data
@@ -27,6 +30,16 @@ class ScoreDataStore(private val context: Context) {
     val selectedSkinId: Flow<String> = context.dataStore.data
         .map { preferences ->
             preferences[PreferencesKeys.SELECTED_SKIN] ?: "orange"
+        }
+
+    val soundEnabled: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            preferences[PreferencesKeys.SOUND_ENABLED] ?: true
+        }
+
+    val controlMode: Flow<String> = context.dataStore.data
+        .map { preferences ->
+            preferences[PreferencesKeys.CONTROL_MODE] ?: "TAP"
         }
 
     suspend fun saveHighScore(score: Int) {
@@ -41,6 +54,18 @@ class ScoreDataStore(private val context: Context) {
     suspend fun saveSelectedSkin(skinId: String) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.SELECTED_SKIN] = skinId
+        }
+    }
+
+    suspend fun saveSoundEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.SOUND_ENABLED] = enabled
+        }
+    }
+
+    suspend fun saveControlMode(mode: String) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.CONTROL_MODE] = mode
         }
     }
 }

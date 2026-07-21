@@ -19,4 +19,16 @@ class ScoreRepositoryImpl(
     override suspend fun saveSelectedSkin(skinId: String) {
         scoreDataStore.saveSelectedSkin(skinId)
     }
+
+    override fun getSoundEnabled(): Flow<Boolean> = scoreDataStore.soundEnabled
+
+    override suspend fun saveSoundEnabled(enabled: Boolean) {
+        scoreDataStore.saveSoundEnabled(enabled)
+    }
+
+    override fun getControlMode(): Flow<String> = scoreDataStore.controlMode
+
+    override suspend fun saveControlMode(mode: String) {
+        scoreDataStore.saveControlMode(mode)
+    }
 }

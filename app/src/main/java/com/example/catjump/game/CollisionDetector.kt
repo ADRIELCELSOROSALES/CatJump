@@ -8,7 +8,7 @@ import com.example.catjump.domain.model.PowerUp
 
 class CollisionDetector {
 
-    fun checkPlatformCollision(cat: Cat, platform: Platform): Boolean {
+    fun checkPlatformCollision(cat: Cat, platform: Platform, deltaFrames: Float = 1f): Boolean {
         if (!platform.isActive) return false
 
         // Solo detectar colisión cuando el gato está cayendo
@@ -18,9 +18,12 @@ class CollisionDetector {
         val catFeetY = cat.bottom
         val platformTop = platform.y
 
-        // El gato debe estar cayendo hacia la plataforma
+        // Ventana de aterrizaje = altura de la plataforma + distancia barrida este frame
+        // (velocidad * deltaFrames). Esto evita atravesar plataformas ("tunneling")
+        // cuando el frame es largo, sin depender del framerate.
+        val sweep = cat.velocityY * deltaFrames
         val verticalOverlap = catFeetY >= platformTop &&
-                              catFeetY <= platformTop + platform.height + cat.velocityY
+                              catFeetY <= platformTop + platform.height + sweep
 
         // Verificar overlap horizontal (con un poco de tolerancia)
         val horizontalOverlap = cat.right > platform.x + 5f && cat.x < platform.right - 5f
@@ -48,9 +51,9 @@ class CollisionDetector {
                catTop < obsBottom
     }
 
-    fun findCollidingPlatform(cat: Cat, platforms: List<Platform>): Platform? {
+    fun findCollidingPlatform(cat: Cat, platforms: List<Platform>, deltaFrames: Float = 1f): Platform? {
         return platforms.firstOrNull { platform ->
-            checkPlatformCollision(cat, platform)
+            checkPlatformCollision(cat, platform, deltaFrames)
         }
     }
 

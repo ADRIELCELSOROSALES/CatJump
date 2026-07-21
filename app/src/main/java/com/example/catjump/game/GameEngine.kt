@@ -30,26 +30,35 @@ class GameEngine(
         )
     }
 
-    fun update(state: GameState): GameState {
+    /**
+     * Avanza un frame de simulación.
+     *
+     * @param nowMs reloj monotónico en milisegundos (de withFrameNanos), usado para los timers.
+     * @param deltaFrames tiempo transcurrido este frame expresado en "frames de referencia"
+     *                    (1.0 = 12 ms). Hace la física independiente del framerate.
+     */
+    fun update(state: GameState, nowMs: Long, deltaFrames: Float): GameState {
         if (state.isGameOver) return state
 
+        val dt = deltaFrames.coerceIn(0f, GameConstants.MAX_DELTA_FRAMES)
+
         // Clear sound events from previous frame
-        var newState = state.copy(currentTime = System.currentTimeMillis(), soundEvents = emptyList())
+        var newState = state.copy(currentTime = nowMs, soundEvents = emptyList())
 
         // Update power-up timers
         newState = updatePowerUpTimers(newState)
 
         // Update cat physics
-        newState = updateCatPhysics(newState)
+        newState = updateCatPhysics(newState, dt)
 
         // Update platforms (moving ones)
-        newState = updatePlatforms(newState)
+        newState = updatePlatforms(newState, dt)
 
         // Update obstacles (including dog walking)
-        newState = updateObstacles(newState)
+        newState = updateObstacles(newState, dt)
 
         // Check collisions
-        newState = checkCollisions(newState)
+        newState = checkCollisions(newState, dt)
 
         // Update camera and score
         newState = updateCameraAndScore(newState)
@@ -85,7 +94,7 @@ class GameEngine(
         return state.copy(cat = updatedCat)
     }
 
-    private fun updateCatPhysics(state: GameState): GameState {
+    private fun updateCatPhysics(state: GameState, dt: Float): GameState {
         val cat = state.cat
 
         var newVelocityY: Float
@@ -94,17 +103,17 @@ class GameEngine(
         if (cat.jetpackActive) {
             newVelocityY = GameConstants.JETPACK_BOOST
         } else {
-            // Apply gravity
-            newVelocityY = cat.velocityY + GameConstants.GRAVITY
+            // Apply gravity (acumulación escalada por delta-time)
+            newVelocityY = cat.velocityY + GameConstants.GRAVITY * dt
             newVelocityY = newVelocityY.coerceAtMost(GameConstants.MAX_FALL_VELOCITY)
         }
 
         // Apply horizontal movement
         val newVelocityX = moveDirection * GameConstants.HORIZONTAL_SPEED
 
-        // Update position
-        var newX = cat.x + newVelocityX
-        val newY = cat.y + newVelocityY
+        // Update position (integración escalada por delta-time)
+        var newX = cat.x + newVelocityX * dt
+        val newY = cat.y + newVelocityY * dt
 
         // Screen wrapping (horizontal)
         if (newX < -cat.width) {
@@ -131,10 +140,10 @@ class GameEngine(
         )
     }
 
-    private fun updatePlatforms(state: GameState): GameState {
+    private fun updatePlatforms(state: GameState, dt: Float): GameState {
         val updatedPlatforms = state.platforms.map { platform ->
             if (platform.type == PlatformType.MOVING && platform.isActive) {
-                var newX = platform.x + platform.velocityX
+                var newX = platform.x + platform.velocityX * dt
 
                 // Bounce off screen edges
                 val newVelocityX = if (newX <= 0 || newX >= state.screenWidth - platform.width) {
@@ -154,9 +163,9 @@ class GameEngine(
         return state.copy(platforms = updatedPlatforms)
     }
 
-    private fun updateObstacles(state: GameState): GameState {
+    private fun updateObstacles(state: GameState, dt: Float): GameState {
         val updatedObstacles = state.obstacles.map { obstacle ->
-            var newX = obstacle.x + obstacle.velocityX
+            var newX = obstacle.x + obstacle.velocityX * dt
             var newVelocityX = obstacle.velocityX
 
             // Los perros caminan dentro de su plataforma
@@ -180,16 +189,16 @@ class GameEngine(
         return state.copy(obstacles = updatedObstacles)
     }
 
-    private fun checkCollisions(state: GameState): GameState {
+    private fun checkCollisions(state: GameState, dt: Float): GameState {
         var cat = state.cat
         var obstacles = state.obstacles
         var powerUps = state.powerUps
         val currentTime = state.currentTime
         val soundEvents = state.soundEvents.toMutableList()
 
-        // Decrease invincibility frames
-        if (cat.invincibilityFrames > 0) {
-            cat = cat.copy(invincibilityFrames = cat.invincibilityFrames - 1)
+        // Decrease invincibility frames (escalado por delta-time)
+        if (cat.invincibilityFrames > 0f) {
+            cat = cat.copy(invincibilityFrames = (cat.invincibilityFrames - dt).coerceAtLeast(0f))
         }
 
         // Check power-up collision
@@ -255,7 +264,7 @@ class GameEngine(
 
         // Check platform collision (only when falling and not using jetpack)
         if (!cat.jetpackActive) {
-            val collidingPlatform = collisionDetector.findCollidingPlatform(cat, state.platforms)
+            val collidingPlatform = collisionDetector.findCollidingPlatform(cat, state.platforms, dt)
 
             if (collidingPlatform != null) {
                 // Jump velocity - use super jump if active

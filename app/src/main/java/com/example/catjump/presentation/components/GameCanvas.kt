@@ -26,11 +26,14 @@ import com.example.catjump.domain.model.PowerUpType
 
 @Composable
 fun GameCanvas(
-    gameState: GameState,
+    gameStateProvider: () -> GameState?,
     modifier: Modifier = Modifier,
     catSkin: CatSkin = CatSkins.ORANGE
 ) {
     Canvas(modifier = modifier.fillMaxSize()) {
+        // Lectura diferida: al leer el estado dentro de la fase de dibujo, solo se
+        // invalida el draw del Canvas en cada frame, sin recomponer el árbol de UI.
+        val gameState = gameStateProvider() ?: return@Canvas
         val cameraOffset = gameState.cameraY
 
         // Draw platforms
@@ -759,7 +762,7 @@ private fun DrawScope.drawKibbleIcon(x: Float, y: Float, width: Float, height: F
 private fun DrawScope.drawCat(cat: Cat, cameraOffset: Float, skin: CatSkin = CatSkins.ORANGE) {
     // Blink effect when invincible from damage (skip drawing every other few frames)
     // Only blink if invincible from damage, not from power-ups
-    if (cat.invincibilityFrames > 0 && !cat.hasPowerUp && (cat.invincibilityFrames / 5) % 2 == 0) {
+    if (cat.invincibilityFrames > 0f && !cat.hasPowerUp && ((cat.invincibilityFrames / 5f).toInt()) % 2 == 0) {
         return // Don't draw this frame (blinking effect)
     }
 

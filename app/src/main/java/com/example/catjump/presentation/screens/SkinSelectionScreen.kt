@@ -62,7 +62,7 @@ fun SkinSelectionScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         // Animated background
-        GameBackground(cameraY = 0f)
+        GameBackground(cameraYProvider = { 0f }, scoreProvider = { 0 })
 
         Column(
             modifier = Modifier

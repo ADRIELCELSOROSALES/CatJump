@@ -17,6 +17,7 @@ import com.example.catjump.domain.model.SoundEvent
 import com.example.catjump.presentation.screens.GameOverScreen
 import com.example.catjump.presentation.screens.GameScreen
 import com.example.catjump.presentation.screens.MenuScreen
+import com.example.catjump.presentation.screens.SettingsScreen
 import com.example.catjump.presentation.screens.SkinSelectionScreen
 import com.example.catjump.presentation.viewmodel.GameUiState
 import com.example.catjump.presentation.viewmodel.GameViewModel
@@ -26,6 +27,7 @@ sealed class Screen(val route: String) {
     data object Game : Screen("game")
     data object GameOver : Screen("game_over")
     data object Skins : Screen("skins")
+    data object Settings : Screen("settings")
 }
 
 @Composable
@@ -47,6 +49,12 @@ fun CatJumpNavGraph(
     val uiState by viewModel.uiState.collectAsState()
     val highScore by viewModel.highScore.collectAsState()
     val selectedSkin by viewModel.selectedSkin.collectAsState()
+    val settings by viewModel.settings.collectAsState()
+
+    // Aplicar preferencia de audio (mutea efectos y corta música al desactivar)
+    LaunchedEffect(settings.soundEnabled) {
+        soundManager.setEnabled(settings.soundEnabled)
+    }
 
     NavHost(
         navController = navController,
@@ -69,7 +77,19 @@ fun CatJumpNavGraph(
                 },
                 onSkinsClick = {
                     navController.navigate(Screen.Skins.route)
+                },
+                onSettingsClick = {
+                    navController.navigate(Screen.Settings.route)
                 }
+            )
+        }
+
+        composable(Screen.Settings.route) {
+            SettingsScreen(
+                settings = settings,
+                onSoundToggle = { enabled -> viewModel.setSoundEnabled(enabled) },
+                onControlModeSelected = { mode -> viewModel.setControlMode(mode) },
+                onBackClick = { navController.popBackStack() }
             )
         }
 
@@ -86,9 +106,13 @@ fun CatJumpNavGraph(
         composable(Screen.Game.route) {
             val state = uiState
 
-            // Start background music when entering game screen
-            LaunchedEffect(Unit) {
-                soundManager.startBackgroundMusic()
+            // Música de fondo (reacciona al mute)
+            LaunchedEffect(settings.soundEnabled) {
+                if (settings.soundEnabled) {
+                    soundManager.startBackgroundMusic()
+                } else {
+                    soundManager.stopBackgroundMusic()
+                }
             }
 
             // Handle navigation to GameOver
@@ -100,39 +124,36 @@ fun CatJumpNavGraph(
                 }
             }
 
-            // Handle sound events
-            LaunchedEffect(state) {
-                if (state is GameUiState.Playing) {
-                    state.gameState.soundEvents.forEach { event ->
-                        when (event) {
-                            SoundEvent.JUMP -> soundManager.playJumpSound()
-                            SoundEvent.LOSE_LIFE -> soundManager.playLoseLifeSound()
-                            SoundEvent.DOG_APPEARED -> soundManager.playDogAppearedSound()
-                        }
+            // Sonidos: se consumen desde un SharedFlow, desacoplados del render por-frame
+            LaunchedEffect(Unit) {
+                viewModel.soundEvents.collect { event ->
+                    when (event) {
+                        SoundEvent.JUMP -> soundManager.playJumpSound()
+                        SoundEvent.LOSE_LIFE -> soundManager.playLoseLifeSound()
+                        SoundEvent.DOG_APPEARED -> soundManager.playDogAppearedSound()
                     }
                 }
             }
 
-            // Show game screen
-            if (state is GameUiState.Playing) {
+            if (state !is GameUiState.GameOver) {
                 GameScreen(
-                    gameState = state.gameState,
-                    onStartGame = { _, _ -> }, // Already started
+                    gameStateProvider = { viewModel.gameState },
+                    isReady = state is GameUiState.Playing,
+                    isPaused = viewModel.isPaused,
+                    onStartGame = { width, height -> viewModel.startGame(width, height) },
+                    onTick = viewModel::tick,
                     onMoveLeft = viewModel::moveLeft,
                     onMoveRight = viewModel::moveRight,
                     onStopMoving = viewModel::stopMoving,
-                    catSkin = selectedSkin
-                )
-            } else if (state !is GameUiState.GameOver) {
-                // Initial state - start game
-                GameScreen(
-                    gameState = null,
-                    onStartGame = { width, height ->
-                        viewModel.startGame(width, height)
+                    onPause = viewModel::pause,
+                    onResume = viewModel::resume,
+                    onExitToMenu = {
+                        viewModel.goToMenu()
+                        navController.navigate(Screen.Menu.route) {
+                            popUpTo(Screen.Game.route) { inclusive = true }
+                        }
                     },
-                    onMoveLeft = viewModel::moveLeft,
-                    onMoveRight = viewModel::moveRight,
-                    onStopMoving = viewModel::stopMoving,
+                    controlMode = settings.controlMode,
                     catSkin = selectedSkin
                 )
             }

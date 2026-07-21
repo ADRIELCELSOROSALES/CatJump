@@ -44,14 +44,18 @@ fun getLayerTransition(score: Int): Float {
 
 @Composable
 fun GameBackground(
-    cameraY: Float,
-    modifier: Modifier = Modifier,
-    score: Int = 0
+    cameraYProvider: () -> Float,
+    scoreProvider: () -> Int,
+    modifier: Modifier = Modifier
 ) {
-    val skyLayer = getSkyLayer(score)
-    val transition = getLayerTransition(score)
-
     Canvas(modifier = modifier.fillMaxSize()) {
+        // Lectura diferida dentro del draw: el fondo se redibuja por frame (parallax)
+        // sin provocar recomposición del árbol.
+        val cameraY = cameraYProvider()
+        val score = scoreProvider()
+        val skyLayer = getSkyLayer(score)
+        val transition = getLayerTransition(score)
+
         when (skyLayer) {
             SkyLayer.SUNSET -> drawSunsetBackground(cameraY, transition)
             SkyLayer.CLOUDY_SKY -> drawCloudySkyBackground(cameraY, transition)

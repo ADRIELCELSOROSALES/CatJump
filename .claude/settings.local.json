@@ -11,7 +11,10 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(./gradlew assembleDebug:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(./gradlew :app:compileDebugKotlin)",
+      "Bash(sh ./gradlew :app:compileDebugKotlin)",
+      "Bash(sh ./gradlew :app:assembleRelease)"
     ]
   }
 }

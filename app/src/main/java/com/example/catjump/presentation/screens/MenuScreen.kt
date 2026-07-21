@@ -26,6 +26,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -40,6 +42,7 @@ fun MenuScreen(
     highScore: Int,
     onPlayClick: () -> Unit,
     onSkinsClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
     selectedSkin: CatSkin = CatSkins.ORANGE
 ) {
@@ -67,7 +70,7 @@ fun MenuScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         // Animated background
-        GameBackground(cameraY = 0f)
+        GameBackground(cameraYProvider = { 0f }, scoreProvider = { 0 })
 
         // Main content
         Column(
@@ -247,6 +250,37 @@ fun MenuScreen(
                     text = "SKINS",
                     color = Color.White,
                     fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+
+        // Settings button - bottom right corner
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFF37474F).copy(alpha = 0.9f),
+                            Color(0xFF263238).copy(alpha = 0.9f)
+                        )
+                    )
+                )
+                .clickable(onClick = onSettingsClick)
+                .padding(horizontal = 20.dp, vertical = 16.dp)
+                .semantics { contentDescription = "Ajustes" },
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(text = "⚙", color = Color.White, fontSize = 28.sp)
+                Text(
+                    text = "AJUSTES",
+                    color = Color.White,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 4.dp)
                 )

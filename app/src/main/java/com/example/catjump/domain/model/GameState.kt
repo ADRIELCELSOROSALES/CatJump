@@ -15,7 +15,7 @@ data class GameState(
     val cameraY: Float = 0f,
     val screenWidth: Float = 0f,
     val screenHeight: Float = 0f,
-    val currentTime: Long = System.currentTimeMillis(),
+    val currentTime: Long = 0L,  // Reloj monotónico (ms), fijado por el motor en cada tick
     val soundEvents: List<SoundEvent> = emptyList(),
     val activeDogCount: Int = 0
 ) {

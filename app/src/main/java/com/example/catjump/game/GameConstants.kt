@@ -23,6 +23,13 @@ object GameConstants {
     const val FRAME_TIME_MS = 12L
     const val CAT_SIZE = 120f               // Tamaño del gato (50% más grande que original)
 
+    // Delta-time: física independiente del framerate.
+    // Las velocidades/gravedad de abajo están expresadas en "unidades por frame de
+    // referencia" (12 ms ≈ el ritmo para el que se ajustó el juego). Cada frame real
+    // se integra multiplicando por deltaFrames = tiempoRealTranscurrido / 12ms.
+    const val TARGET_FRAME_MS = 12f         // Frame de referencia
+    const val MAX_DELTA_FRAMES = 1.8f       // Tope anti-tunneling tras pausas/lag (~45 FPS efectivos)
+
     // Fatness system
     const val FATNESS_GAIN_PER_BIRD = 0.1f  // Cuánto engorda al comer (10 pájaros = máximo)
     const val MAX_FATNESS = 1f              // Máximo de gordura (10 pájaros)
@@ -46,7 +53,7 @@ object GameConstants {
 
     // Lives system
     const val INITIAL_LIVES = 3
-    const val INVINCIBILITY_FRAMES = 60     // Frames de invencibilidad después de recibir daño
+    const val INVINCIBILITY_FRAMES = 60f    // Duración de invencibilidad en frames de referencia (~0.72s)
 
     // Obstacles
     const val OBSTACLE_SIZE = 70f           // Obstáculos más grandes y visibles

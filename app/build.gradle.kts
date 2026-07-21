@@ -1,7 +1,22 @@
+import java.io.ByteArrayOutputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+}
+
+// versionCode automático: cantidad de commits en git (monótonamente creciente).
+// Así cada build tras un commit sube el versionCode sin editarlo a mano.
+fun gitCommitCount(): Int = try {
+    val stdout = ByteArrayOutputStream()
+    exec {
+        commandLine("git", "rev-list", "--count", "HEAD")
+        standardOutput = stdout
+    }
+    stdout.toString().trim().toInt().coerceAtLeast(1)
+} catch (e: Exception) {
+    1
 }
 
 android {
@@ -9,18 +24,19 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.catjump"
-        minSdk = 21
+        applicationId = "com.adrielrosales.catjump"
+        minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = gitCommitCount()
+        versionName = "1.0.${gitCommitCount()}"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -58,6 +74,9 @@ dependencies {
 
     // ViewModel Compose
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+
+    // Lifecycle (Compose runtime observer para pausar en background)
+    implementation(libs.androidx.lifecycle.runtime.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

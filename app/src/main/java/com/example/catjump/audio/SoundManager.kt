@@ -13,13 +13,17 @@ class SoundManager(private val context: Context) {
 
     private var musicPlayer: MediaPlayer? = null
     private var gameOverPlayer: MediaPlayer? = null
-    private var dogPlayer: MediaPlayer? = null
 
-    // SoundPool for short, frequent sounds (jump, lose life)
+    // SoundPool para efectos cortos y frecuentes (salto, perder vida, perro)
     private val soundPool: SoundPool
     private var jumpSoundId: Int = 0
     private var loseLifeSoundId: Int = 0
+    private var dogSoundId1: Int = 0
+    private var dogSoundId2: Int = 0
     private var soundsLoaded = false
+
+    /** Preferencia de audio del usuario. Al desactivarse se corta la música. */
+    private var soundEnabled = true
 
     init {
         val audioAttributes = AudioAttributes.Builder()
@@ -28,7 +32,7 @@ class SoundManager(private val context: Context) {
             .build()
 
         soundPool = SoundPool.Builder()
-            .setMaxStreams(4)
+            .setMaxStreams(5)
             .setAudioAttributes(audioAttributes)
             .build()
 
@@ -42,9 +46,20 @@ class SoundManager(private val context: Context) {
         // Load sounds
         jumpSoundId = soundPool.load(context, R.raw.salto, 1)
         loseLifeSoundId = soundPool.load(context, R.raw.perdervida, 1)
+        dogSoundId1 = soundPool.load(context, R.raw.aparicionperro, 1)
+        dogSoundId2 = soundPool.load(context, R.raw.aparicionperroperro, 1)
+    }
+
+    /** Activa/desactiva TODO el audio (efectos y música). */
+    fun setEnabled(enabled: Boolean) {
+        soundEnabled = enabled
+        if (!enabled) {
+            stopBackgroundMusic()
+        }
     }
 
     fun startBackgroundMusic() {
+        if (!soundEnabled) return
         try {
             stopBackgroundMusic()
 
@@ -75,6 +90,7 @@ class SoundManager(private val context: Context) {
     }
 
     fun playGameOverSound() {
+        if (!soundEnabled) return
         try {
             gameOverPlayer?.release()
 
@@ -92,48 +108,22 @@ class SoundManager(private val context: Context) {
     }
 
     fun playJumpSound() {
-        if (soundsLoaded) {
+        if (soundEnabled && soundsLoaded) {
             soundPool.play(jumpSoundId, 0.3f, 0.3f, 1, 0, 1f)
         }
     }
 
     fun playLoseLifeSound() {
-        if (soundsLoaded) {
+        if (soundEnabled && soundsLoaded) {
             soundPool.play(loseLifeSoundId, 0.6f, 0.6f, 2, 0, 1f)
         }
     }
 
     fun playDogAppearedSound() {
-        try {
-            // Only play if no dog sound is currently playing
-            if (dogPlayer?.isPlaying == true) {
-                Log.d(TAG, "Dog sound already playing, skipping")
-                return
-            }
-
-            dogPlayer?.release()
-
-            // Randomly choose between the two dog sounds
-            val dogSoundRes = if (Math.random() < 0.5) {
-                R.raw.aparicionperro
-            } else {
-                R.raw.aparicionperroperro
-            }
-
-            dogPlayer = MediaPlayer.create(context, dogSoundRes).apply {
-                setVolume(0.6f, 0.6f)
-                setOnCompletionListener { mp ->
-                    mp.release()
-                    if (dogPlayer == mp) {
-                        dogPlayer = null
-                    }
-                }
-                start()
-            }
-            Log.d(TAG, "Dog appeared sound played")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error playing dog appeared sound", e)
-        }
+        if (!soundEnabled || !soundsLoaded) return
+        // Elegir aleatoriamente uno de los dos sonidos de perro
+        val dogSoundId = if (Math.random() < 0.5) dogSoundId1 else dogSoundId2
+        soundPool.play(dogSoundId, 0.6f, 0.6f, 1, 0, 1f)
     }
 
     fun release() {
@@ -142,8 +132,6 @@ class SoundManager(private val context: Context) {
             musicPlayer = null
             gameOverPlayer?.release()
             gameOverPlayer = null
-            dogPlayer?.release()
-            dogPlayer = null
             soundPool.release()
             Log.d(TAG, "SoundManager released")
         } catch (e: Exception) {
