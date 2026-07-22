@@ -14,7 +14,17 @@
       "Bash(dir:*)",
       "Bash(./gradlew :app:compileDebugKotlin)",
       "Bash(sh ./gradlew :app:compileDebugKotlin)",
-      "Bash(sh ./gradlew :app:assembleRelease)"
+      "Bash(sh ./gradlew :app:assembleRelease)",
+      "Read(//Users/adrielcelsorosales/Downloads/**)",
+      "Bash(git check-ignore *)",
+      "Bash(mkdir -p keystore)",
+      "Bash(cp /Users/adrielcelsorosales/Downloads/drive-download-20260722T124342Z-1-001/CatJump_release.jks keystore/)",
+      "Bash(keytool -printcert -jarfile /Users/adrielcelsorosales/Downloads/drive-download-20260722T124342Z-1-001/app-release.apk)",
+      "Bash(java -version)",
+      "Bash(./gradlew assembleRelease -q)",
+      "Bash(echo \"=== EXIT: $? ===\")",
+      "Bash(chmod +x gradlew)",
+      "Bash(./gradlew assembleRelease)"
     ]
   }
 }

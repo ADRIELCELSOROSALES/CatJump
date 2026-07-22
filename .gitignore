@@ -13,3 +13,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Firma de release: NUNCA subir keystore ni contraseñas
+*.jks
+*.keystore
+/keystore/
+keystore.properties
