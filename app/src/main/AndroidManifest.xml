@@ -14,6 +14,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CatJump"
         tools:targetApi="31">
+
+        <!-- targetSdk 36 ignora screenOrientation en pantallas >=600dp (tablets,
+             plegables). El juego está calibrado para vertical, así que mantenemos
+             el bloqueo. Opt-out temporal: deja de tener efecto en targetSdk 37. -->
+        <property
+            android:name="android.window.PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY"
+            android:value="true" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

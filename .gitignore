@@ -14,6 +14,13 @@
 .cxx
 local.properties
 
+# Artefactos de build: se regeneran con `./gradlew bundleRelease`.
+# No versionar APK/AAB: inflan el repo y se confunden con el build actual.
+/app/release/
+/app/build/
+*.apk
+*.aab
+
 # Firma de release: NUNCA subir keystore ni contraseñas
 *.jks
 *.keystore
