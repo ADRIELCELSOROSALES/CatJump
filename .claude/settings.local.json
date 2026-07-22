@@ -24,7 +24,21 @@
       "Bash(./gradlew assembleRelease -q)",
       "Bash(echo \"=== EXIT: $? ===\")",
       "Bash(chmod +x gradlew)",
-      "Bash(./gradlew assembleRelease)"
+      "Bash(./gradlew assembleRelease)",
+      "Bash(keytool -list -v -keystore keystore/catjump-upload.jks -storepass \"fJeqHxcTSqUJmPmTQIU4jQHO\")",
+      "Bash(shasum -a 256 app/release/app-release.apk)",
+      "Bash(shasum -a 256)",
+      "Bash(shasum -a 256 \"/Users/adrielcelsorosales/Downloads/drive-download-20260722T124342Z-1-001/app-release.apk\")",
+      "Bash(./gradlew bundleRelease --console=plain)",
+      "Bash(sh gradlew bundleRelease --console=plain)",
+      "WebSearch",
+      "Bash(keytool -printcert -jarfile app/build/outputs/bundle/release/app-release.aab)",
+      "Bash(git rm *)",
+      "Bash(grep -iE \"\\\\.apk$|\\\\.aab$|\\\\.jks$\")",
+      "Bash(git checkout *)",
+      "Bash(xargs -I{} echo \"archivos sensibles versionados: {}\")",
+      "Bash(sips -g pixelWidth -g pixelHeight Screenshot_20260127_230302.png)",
+      "Bash(sips -g pixelWidth -g pixelHeight app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp)"
     ]
   }
 }
