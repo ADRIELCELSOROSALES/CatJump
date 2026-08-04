@@ -16,6 +16,7 @@ import com.example.catjump.navigation.CatJumpNavGraph
 import com.example.catjump.presentation.viewmodel.GameViewModel
 import com.example.catjump.presentation.viewmodel.GameViewModelFactory
 import com.example.catjump.ui.theme.CatJumpTheme
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 
 private const val TAG = "MainActivity"
 
@@ -70,6 +71,11 @@ class MainActivity : ComponentActivity() {
             Log.d(TAG, "onCreate completed")
         } catch (e: Exception) {
             Log.e(TAG, "Error in onCreate", e)
+            // Este catch evita que la app crashee, pero por eso mismo el fallo
+            // se vuelve invisible: sin esta línea el usuario ve pantalla negra
+            // y a nosotros no nos llega ningún informe. Se registra como
+            // non-fatal para que aparezca en Crashlytics sin tirar la app.
+            FirebaseCrashlytics.getInstance().recordException(e)
         }
     }
 }

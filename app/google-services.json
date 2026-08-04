@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "48121787252",
+    "project_id": "catjump-1999",
+    "storage_bucket": "catjump-1999.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:48121787252:android:bfe183c83180d920817221",
+        "android_client_info": {
+          "package_name": "com.adrielrosales.catjump"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD8aNtRtmuS5bp8CjTImY6xWr5sST84mgc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

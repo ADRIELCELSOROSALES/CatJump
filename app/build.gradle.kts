@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 // Versionado explícito. Google Play rechaza para siempre un versionCode repetido
@@ -92,6 +94,10 @@ dependencies {
 
     // Lifecycle (Compose runtime observer para pausar en background)
     implementation(libs.androidx.lifecycle.runtime.compose)
+
+    // Firebase: la BOM fija las versiones, por eso las libs van sin versión.
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.crashlytics)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
