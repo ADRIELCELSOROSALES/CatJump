@@ -1,24 +1,18 @@
-import java.io.ByteArrayOutputStream
 import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
 }
 
-// versionCode automático: cantidad de commits en git (monótonamente creciente).
-// Así cada build tras un commit sube el versionCode sin editarlo a mano.
-fun gitCommitCount(): Int = try {
-    val stdout = ByteArrayOutputStream()
-    exec {
-        commandLine("git", "rev-list", "--count", "HEAD")
-        standardOutput = stdout
-    }
-    stdout.toString().trim().toInt().coerceAtLeast(1)
-} catch (e: Exception) {
-    1
-}
+// Versionado explícito. Google Play rechaza para siempre un versionCode repetido
+// o menor a uno ya subido, así que NO puede derivarse del historial de git
+// (un squash o rebase lo haría bajar). Subir a mano en cada release.
+val appVersionCode = 11
+val appVersionName = "1.0.0"
 
 // Credenciales de firma desde keystore.properties (fuera de control de versiones).
 // Si el archivo no existe, el build sigue funcionando sin firmar (debug/CI).
@@ -30,14 +24,14 @@ val hasSigningConfig = keystorePropsFile.exists()
 
 android {
     namespace = "com.example.catjump"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.adrielrosales.catjump"
         minSdk = 24
-        targetSdk = 35
-        versionCode = gitCommitCount()
-        versionName = "1.0.${gitCommitCount()}"
+        targetSdk = 36
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -100,6 +94,10 @@ dependencies {
 
     // Lifecycle (Compose runtime observer para pausar en background)
     implementation(libs.androidx.lifecycle.runtime.compose)
+
+    // Firebase: la BOM fija las versiones, por eso las libs van sin versión.
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.crashlytics)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
