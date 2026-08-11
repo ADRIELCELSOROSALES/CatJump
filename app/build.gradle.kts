@@ -11,7 +11,7 @@ plugins {
 // Versionado explícito. Google Play rechaza para siempre un versionCode repetido
 // o menor a uno ya subido, así que NO puede derivarse del historial de git
 // (un squash o rebase lo haría bajar). Subir a mano en cada release.
-val appVersionCode = 11
+val appVersionCode = 1
 val appVersionName = "1.0.0"
 
 // Credenciales de firma desde keystore.properties (fuera de control de versiones).

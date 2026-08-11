@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generado desde la geometria de CatSprite.kt. No editar a mano:
+     regenerar con scripts/make_icons.py para no desincronizar los mipmap. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:pathData="M30,57a24,24 0 1,0 48,0a24,24 0 1,0 -48,0ZM33.65,44.28L36.28,30.74L50.66,33.23A24,24 0 0,0 33.65,44.28ZM74.35,44.28L71.72,30.74L57.34,33.23A24,24 0 0,1 74.35,44.28ZM40.24,53.4a5.36,5.36 0 1,0 10.71,0a5.36,5.36 0 1,0 -10.71,0ZM57.04,53.4a5.36,5.36 0 1,0 10.71,0a5.36,5.36 0 1,0 -10.71,0ZM51.36,63L56.64,63L54,67.32Z"
+        android:fillColor="#FFFFFF" android:fillType="evenOdd" />
+</vector>
